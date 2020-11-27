@@ -389,8 +389,8 @@ impl Cfg {
 
     /// All output that is prepended by the `target_` string.
     ///
-    /// These are all recognized target key-value lines, i.e.
-    /// `target_<key>="<value>"`. The double quotes are removed for the values.
+    /// These are all the recognized target key-value lines, i.e.
+    /// `target_<key>="<value>"`. The double quotes, `"` are removed for the values.
     pub fn target(&self) -> &Target {
         &self.target
     }

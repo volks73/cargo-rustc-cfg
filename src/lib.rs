@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! # `cargo-rustc-cfg` libraryhttps://doc.rust-lang.org/cargo/index.html
+//! # `cargo-rustc-cfg` library
 //!
 //! The goal of this library, a.k.a. crate, is to make the compiler
 //! configuration at the time of building a project with [Cargo] available to
@@ -113,20 +113,20 @@ impl Cfg {
     pub fn with_args<I, S>(args: I) -> Result<Self, Error>
     where
         I: IntoIterator<Item = S>,
-        S: AsRef<OsStr>
-
+        S: AsRef<OsStr>,
     {
         let output = Command::new(
             env::var(CARGO_VARIABLE)
                 .map(PathBuf::from)
                 .ok()
-                .unwrap_or_else(|| PathBuf::from(CARGO)))
-            .arg(RUSTC)
-            .args(args)
-            .arg("--")
-            .arg("--print")
-            .arg("cfg")
-            .output()?;
+                .unwrap_or_else(|| PathBuf::from(CARGO)),
+        )
+        .arg(RUSTC)
+        .args(args)
+        .arg("--")
+        .arg("--print")
+        .arg("cfg")
+        .output()?;
         if !output.status.success() {
             return Err(Error::Command(output));
         }
@@ -147,33 +147,41 @@ impl Cfg {
                 match key {
                     "target_arch" => arch = Some(value.trim_matches('"').to_string()),
                     "target_endian" => endian = Some(value.trim_matches('"').to_string()),
-                    "target_env" => env = {
-                        let env = value.trim_matches('"').to_string();
-                        if env.is_empty() {
-                            None
-                        } else {
-                            Some(env)
+                    "target_env" => {
+                        env = {
+                            let env = value.trim_matches('"').to_string();
+                            if env.is_empty() {
+                                None
+                            } else {
+                                Some(env)
+                            }
                         }
-                    },
-                    "target_family" => family = {
-                        let family = value.trim_matches('"').to_string();
-                        if family.is_empty() {
-                            None
-                        } else {
-                            Some(family)
+                    }
+                    "target_family" => {
+                        family = {
+                            let family = value.trim_matches('"').to_string();
+                            if family.is_empty() {
+                                None
+                            } else {
+                                Some(family)
+                            }
                         }
-                    },
+                    }
                     "target_feature" => features.push(value.trim_matches('"').to_string()),
                     "target_os" => os = Some(value.trim_matches('"').to_string()),
-                    "target_pointer_width" => pointer_width = Some(value.trim_matches('"').to_string()),
-                    "target_vendor" => vendor = {
-                        let vendor = value.trim_matches('"').to_string();
-                        if vendor.is_empty() {
-                            None
-                        } else {
-                            Some(vendor)
+                    "target_pointer_width" => {
+                        pointer_width = Some(value.trim_matches('"').to_string())
+                    }
+                    "target_vendor" => {
+                        vendor = {
+                            let vendor = value.trim_matches('"').to_string();
+                            if vendor.is_empty() {
+                                None
+                            } else {
+                                Some(vendor)
+                            }
                         }
-                    },
+                    }
                     _ => {
                         extras.push(String::from(entry));
                     }
@@ -192,9 +200,10 @@ impl Cfg {
                 family,
                 features,
                 os: os.ok_or_else(|| Error::MissingOutput("target_os"))?,
-                pointer_width: pointer_width.ok_or_else(|| Error::MissingOutput("target_pointer_width"))?,
-                vendor
-            }
+                pointer_width: pointer_width
+                    .ok_or_else(|| Error::MissingOutput("target_pointer_width"))?,
+                vendor,
+            },
         })
     }
 
@@ -340,7 +349,12 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Command(output) => write!(f, "{:?}: {}", output, String::from_utf8_lossy(&output.stderr)),
+            Self::Command(output) => write!(
+                f,
+                "{:?}: {}",
+                output,
+                String::from_utf8_lossy(&output.stderr)
+            ),
             Self::FromUtf8(err) => write!(f, "{}", err),
             Self::Generic(msg) => write!(f, "{}", msg),
             Self::Io(err) => write!(f, "{}", err),

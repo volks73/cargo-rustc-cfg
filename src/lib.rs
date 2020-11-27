@@ -22,6 +22,149 @@
 //! via [Cargo environment variables] that are passed to build scripts at run
 //! time.
 //!
+//! # Examples
+//!
+//! Get the configuration for the default Rust compiler (rustc) target within
+//! the Cargo "environment":
+//!
+//! ```
+//! # use cargo_rustc_cfg::{Cfg, Error};
+//! # #[cfg(all(target_arch = "x86_64", target_os = "windows", target_env = "msvc", target_vendor = "pc"))]
+//! # fn main() -> std::result::Result<(), Error> {
+//! // If the default Rust compiler (rustc) target is 'x86_64-pc-windows-msvc', then...
+//! let cfg = Cfg::new()?;
+//! assert_eq!(cfg.target().arch(), "x86_64");
+//! assert_eq!(cfg.target().endian(), "little");
+//! assert_eq!(cfg.target().env(), Some("msvc"));
+//! assert_eq!(cfg.target().family(), Some("windows"));
+//! assert_eq!(cfg.target().os(), "windows");
+//! assert_eq!(cfg.target().pointer_width(), "64");
+//! assert_eq!(cfg.target().vendor(), Some("pc"));
+//! # Ok(())
+//! # }
+//! # #[cfg(all(target_arch = "x86_64", target_os = "windows", target_env = "gnu", target_vendor = "pc"))]
+//! # fn main() -> std::result::Result<(), Error> {
+//! // If the default Rust compiler (rustc) target is 'x86_64-pc-windows-gnu', then...
+//! let cfg = Cfg::new()?;
+//! assert_eq!(cfg.target().arch(), "x86_64");
+//! assert_eq!(cfg.target().endian(), "little");
+//! assert_eq!(cfg.target().env(), Some("gnu"));
+//! assert_eq!(cfg.target().family(), Some("windows"));
+//! assert_eq!(cfg.target().os(), "windows");
+//! assert_eq!(cfg.target().pointer_width(), "64");
+//! assert_eq!(cfg.target().vendor(), Some("pc"));
+//! # Ok(())
+//! # }
+//! # #[cfg(all(target_arch = "x86_64", target_os = "linux"))]
+//! # fn main() -> std::result::Result<(), Error> {
+//! // If the default Rust compiler (rustc) target is 'x86_64-unknown-linxu-gnu', then...
+//! let cfg = Cfg::new()?;
+//! assert_eq!(cfg.target().arch(), "x86_64");
+//! assert_eq!(cfg.target().endian(), "little");
+//! assert_eq!(cfg.target().env(), None);
+//! assert_eq!(cfg.target().family(), Some("unix"));
+//! assert_eq!(cfg.target().os(), "os");
+//! assert_eq!(cfg.target().pointer_width(), "64");
+//! assert_eq!(cfg.target().vendor(), Some("unknown"));
+//! # }
+//! # #[cfg(all(target_arch = "x86_64", target_os = "macos"))]
+//! # fn main() -> std::result::Result<(), Error> {
+//! // If the default Rust compiler (rustc) target is 'x86_64-apple-darwin', then...
+//! let cfg = Cfg::new()?;
+//! assert_eq!(cfg.target().arch(), "x86_64");
+//! assert_eq!(cfg.target().endian(), "little");
+//! assert_eq!(cfg.target().env(), None);
+//! assert_eq!(cfg.target().family(), Some("unix"));
+//! assert_eq!(cfg.target().os(), "os");
+//! assert_eq!(cfg.target().pointer_width(), "64");
+//! assert_eq!(cfg.target().vendor(), Some("apple"));
+//! # }
+//! # #[cfg(all(target_arch = "x86", target_os = "windows", target_env = "msvc", target_vendor = "pc"))]
+//! # fn main() -> std::result::Result<(), Error> {
+//! // If the default Rust compiler (rustc) target is 'i686-pc-windows-msvc', then...
+//! let cfg = Cfg::new()?;
+//! assert_eq!(cfg.target().arch(), "x86_64");
+//! assert_eq!(cfg.target().endian(), "little");
+//! assert_eq!(cfg.target().env(), Some("msvc"));
+//! assert_eq!(cfg.target().family(), Some("windows"));
+//! assert_eq!(cfg.target().os(), "windows");
+//! assert_eq!(cfg.target().pointer_width(), "32");
+//! assert_eq!(cfg.target().vendor(), Some("pc"));
+//! # Ok(())
+//! # }
+//! # #[cfg(all(target_arch = "x86", target_os = "windows", target_env = "gnu", target_vendor = "pc"))]
+//! # fn main() -> std::result::Result<(), Error> {
+//! // If the default Rust compiler (rustc) target is 'i686-pc-windows-gnu', then...
+//! let cfg = Cfg::new()?;
+//! assert_eq!(cfg.target().arch(), "x86_64");
+//! assert_eq!(cfg.target().endian(), "little");
+//! assert_eq!(cfg.target().env(), Some("gnu"));
+//! assert_eq!(cfg.target().family(), Some("windows"));
+//! assert_eq!(cfg.target().os(), "windows");
+//! assert_eq!(cfg.target().pointer_width(), "32");
+//! assert_eq!(cfg.target().vendor(), Some("pc"));
+//! # Ok(())
+//! # }
+//! # #[cfg(all(target_arch = "x86", target_os = "linux"))]
+//! # fn main() -> std::result::Result<(), Error> {
+//! // If the default Rust compiler (rustc) target is 'i686-unknown-linxu-gnu', then...
+//! let cfg = Cfg::new()?;
+//! assert_eq!(cfg.target().arch(), "x86");
+//! assert_eq!(cfg.target().endian(), "little");
+//! assert_eq!(cfg.target().env(), None);
+//! assert_eq!(cfg.target().family(), Some("unix"));
+//! assert_eq!(cfg.target().os(), "os");
+//! assert_eq!(cfg.target().pointer_width(), "32");
+//! assert_eq!(cfg.target().vendor(), Some("unknown"));
+//! # }
+//! # #[cfg(all(target_arch = "x86", target_os = "macos"))]
+//! # fn main() -> std::result::Result<(), Error> {
+//! // If the default Rust compiler (rustc) target is 'i686-apple-darwin', then...
+//! let cfg = Cfg::new()?;
+//! assert_eq!(cfg.target().arch(), "x86");
+//! assert_eq!(cfg.target().endian(), "little");
+//! assert_eq!(cfg.target().env(), None);
+//! assert_eq!(cfg.target().family(), Some("unix"));
+//! assert_eq!(cfg.target().os(), "os");
+//! assert_eq!(cfg.target().pointer_width(), "32");
+//! assert_eq!(cfg.target().vendor(), Some("apple"));
+//! # }
+//! ```
+//!
+//! Get the configuration for a specific Rust compiler (rustc) target triple
+//! within the Cargo "environment" but using the [`Cfg::with_args`] with the
+//! `--target <TRIPLE>` option for the `cargo rustc` subcommand:
+//!
+//! ```
+//! # use cargo_rustc_cfg::{Cfg, Error};
+//! let cfg = Cfg::with_args(&["--target", "i686-pc-windows-msvc"], std::iter::empty::<&str>())?;
+//! assert_eq!(cfg.target().arch(), "x86");
+//! assert_eq!(cfg.target().endian(), "little");
+//! assert_eq!(cfg.target().env(), Some("msvc"));
+//! assert_eq!(cfg.target().family(), Some("windows"));
+//! assert_eq!(cfg.target().os(), "windows");
+//! assert_eq!(cfg.target().pointer_width(), "32");
+//! assert_eq!(cfg.target().vendor(), Some("pc"));
+//! # Ok::<(), Error>(())
+//! ```
+//!
+//! The above use-case is common enough, but tedious to routinely use the
+//! [`Cfg::with_args`] method, that the [`Cfg::with_triple`] method is
+//! available as a shorthand for the previous example:
+//!
+//! ```
+//! # use cargo_rustc_cfg::{Cfg, Error};
+//! let cfg = Cfg::with_triple("i686-pc-windows-msvc")?;
+//! assert_eq!(cfg.target().arch(), "x86");
+//! assert_eq!(cfg.target().endian(), "little");
+//! assert_eq!(cfg.target().env(), Some("msvc"));
+//! assert_eq!(cfg.target().family(), Some("windows"));
+//! assert_eq!(cfg.target().os(), "windows");
+//! assert_eq!(cfg.target().pointer_width(), "32");
+//! assert_eq!(cfg.target().vendor(), Some("pc"));
+//! # Ok::<(), Error>(())
+//! ```
+//!
 //! [Cargo]: https://doc.rust-lang.org/cargo/index.html
 //! [third-party]: https://github.com/rust-lang/cargo/wiki/Third-party-cargo-subcommands
 //! [Cargo custom subcommands]: https://doc.rust-lang.org/1.30.0/cargo/reference/external-tools.html#custom-subcommands
@@ -54,34 +197,38 @@ impl Cfg {
     /// Creates a new configuration using the default Rust compiler (rustc) target.
     ///
     /// This executes the `cargo rustc -- --print cfg` command. If the
-    /// configuration for a specific target triple is desired, then the
-    /// `Cfg::try_from` should be used. The `Cfg::try_from` implementation
-    /// executes the `cargo rustc --target <triple> -- --print cfg` command.
+    /// configuration for a specific Rust compiler (rustc) target triple is
+    /// desired, then the [`Cfg::with_triple`] should be used. The
+    /// [`Cfg::with_triple`] implementation executes the `cargo rustc --target
+    /// <TRIPLE> -- --print cfg` command.
     ///
     /// If additional flags or options need to be included as arguments to the
-    /// `cargo rustc -- --print cfg` command, then use the `Cfg::with_args`
+    /// `cargo rustc -- --print cfg` command, then use the [`Cfg::with_args`]
     /// method.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let cfg_default = Cfg::new()?;
-    /// ```
     pub fn new() -> Result<Self, Error> {
         Self::with_args(std::iter::empty::<&str>(), std::iter::empty::<&str>())
     }
 
     /// Creates a new configuration for a specific target triple string.
     ///
-    /// This executes the `cargo rustc --target <triple> -- --print cfg`
-    /// command, where `<triple>` is a Rust compiler target. A list of available
+    /// This executes the `cargo rustc --target <TRIPLE> -- --print cfg`
+    /// command, where `<TRIPLE>` is a Rust compiler target. A list of available
     /// recognized target triples can be obtained using the `rustc --print
     /// target-list` command.
     ///
     /// # Examples
     ///
     /// ```
-    /// let cfg_for_triple = Cfg::with_triple("i686-pc-windows-gnu")?;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// let cfg = Cfg::with_triple("i686-pc-windows-gnu")?;
+    /// assert_eq!(cfg.target().arch(), "x86");
+    /// assert_eq!(cfg.target().endian(), "little");
+    /// assert_eq!(cfg.target().env(), Some("gnu"));
+    /// assert_eq!(cfg.target().family(), Some("windows"));
+    /// assert_eq!(cfg.target().os(), "windows");
+    /// assert_eq!(cfg.target().pointer_width(), "32");
+    /// assert_eq!(cfg.target().vendor(), Some("pc"));
+    /// # Ok::<(), Error>(())
     /// ```
     pub fn with_triple(s: &str) -> Result<Self, Error> {
         Self::with_args(&["--target", s], std::iter::empty::<&str>())
@@ -90,9 +237,9 @@ impl Cfg {
     /// Creates a new configuration but allows customization of the `cargo rustc
     /// -- --print cfg` command by adding command line arguments.
     ///
-    /// This executes the `cargo rustc <cargo_args> -- <rustc_args> --print cfg`
-    /// command, where `<cargo_args>` is replaced with `cargo rustc` subcommand
-    /// options and flags and the `<rustc_args>` is replaced with options and
+    /// This executes the `cargo rustc <CARGO_ARGS> -- <RUSTC_ARGS> --print cfg`
+    /// command, where `<CARGO_ARGS>` is replaced with `cargo rustc` subcommand
+    /// options and flags and the `<RUSTC_ARGS>` is replaced with options and
     /// flags that are passed to the Rust compiler command line interface after
     /// the `--` argument but before the `--print cfg` option. See the
     /// `std::process::Command::args` method for more information about adding
@@ -100,18 +247,36 @@ impl Cfg {
     ///
     /// # Examples
     ///
-    /// This can be used to add the `--target <triple>` option,
+    /// This can be used to add the `--target <TRIPLE>` option,
     ///
     /// ```
-    /// let cfg_from_triple = Cfg::with_args(&["--target", "i686-pc-windows-msvc"], std::iter::empty::<&str>())?;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// let cfg = Cfg::with_args(&["--target", "i686-pc-windows-msvc"], std::iter::empty::<&str>())?;
+    /// assert_eq!(cfg.target().arch(), "x86");
+    /// assert_eq!(cfg.target().endian(), "little");
+    /// assert_eq!(cfg.target().env(), Some("msvc"));
+    /// assert_eq!(cfg.target().family(), Some("windows"));
+    /// assert_eq!(cfg.target().os(), "windows");
+    /// assert_eq!(cfg.target().pointer_width(), "32");
+    /// assert_eq!(cfg.target().vendor(), Some("pc"));
+    /// # Ok::<(), Error>(())
     /// ```
     ///
     /// but this is a common enough use-case that a specific method for
     /// obtaining the configuration of a target triple is provided as the
-    /// `with_triple` method,
+    /// [`Cfg::with_triple`] method,
     ///
     /// ```
-    /// let cfg_for_triple = Cfg::with_triple("i686-pc-windows-msvc")?;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// let cfg = Cfg::with_triple("i686-pc-windows-msvc")?;
+    /// assert_eq!(cfg.target().arch(), "x86");
+    /// assert_eq!(cfg.target().endian(), "little");
+    /// assert_eq!(cfg.target().env(), Some("msvc"));
+    /// assert_eq!(cfg.target().family(), Some("windows"));
+    /// assert_eq!(cfg.target().os(), "windows");
+    /// assert_eq!(cfg.target().pointer_width(), "32");
+    /// assert_eq!(cfg.target().vendor(), Some("pc"));
+    /// # Ok::<(), Error>(())
     /// ```
     pub fn with_args<C, R, A, U>(cargo_args: C, rustc_args: R) -> Result<Self, Error>
     where

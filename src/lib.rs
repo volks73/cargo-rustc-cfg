@@ -68,7 +68,7 @@ impl Cfg {
     /// let cfg_default = Cfg::new()?;
     /// ```
     pub fn new() -> Result<Self, Error> {
-        Self::with_args(std::iter::empty::<&str>())
+        Self::with_args(std::iter::empty::<&str>(), std::iter::empty::<&str>())
     }
 
     /// Creates a new configuration for a specific target triple string.
@@ -84,23 +84,26 @@ impl Cfg {
     /// let cfg_for_triple = Cfg::with_triple("i686-pc-windows-gnu")?;
     /// ```
     pub fn with_triple(s: &str) -> Result<Self, Error> {
-        Self::with_args(&["--target", s])
+        Self::with_args(&["--target", s], std::iter::empty::<&str>())
     }
 
     /// Creates a new configuration but allows customization of the `cargo rustc
     /// -- --print cfg` command by adding command line arguments.
     ///
-    /// This executes the `cargo rustc <args> -- --print cfg` command, where
-    /// `<args>` is replaced with options and flags to included in the execution
-    /// of the command. See the `std::process::Command::args` method for more
-    /// information about adding arguments to commands.
+    /// This executes the `cargo rustc <cargo_args> -- <rustc_args> --print cfg`
+    /// command, where `<cargo_args>` is replaced with `cargo rustc` subcommand
+    /// options and flags and the `<rustc_args>` is replaced with options and
+    /// flags that are passed to the Rust compiler command line interface after
+    /// the `--` argument but before the `--print cfg` option. See the
+    /// `std::process::Command::args` method for more information about adding
+    /// arguments to commands.
     ///
     /// # Examples
     ///
     /// This can be used to add the `--target <triple>` option,
     ///
     /// ```
-    /// let cfg_from_triple = Cfg::with_args(&["--target", "i686-pc-windows-msvc"])?;
+    /// let cfg_from_triple = Cfg::with_args(&["--target", "i686-pc-windows-msvc"], std::iter::empty::<&str>())?;
     /// ```
     ///
     /// but this is a common enough use-case that a specific method for
@@ -110,10 +113,12 @@ impl Cfg {
     /// ```
     /// let cfg_for_triple = Cfg::with_triple("i686-pc-windows-msvc")?;
     /// ```
-    pub fn with_args<I, S>(args: I) -> Result<Self, Error>
+    pub fn with_args<C, R, A, U>(cargo_args: C, rustc_args: R) -> Result<Self, Error>
     where
-        I: IntoIterator<Item = S>,
-        S: AsRef<OsStr>,
+        C: IntoIterator<Item = A>,
+        R: IntoIterator<Item = U>,
+        A: AsRef<OsStr>,
+        U: AsRef<OsStr>,
     {
         let output = Command::new(
             env::var(CARGO_VARIABLE)
@@ -122,8 +127,9 @@ impl Cfg {
                 .unwrap_or_else(|| PathBuf::from(CARGO)),
         )
         .arg(RUSTC)
-        .args(args)
+        .args(cargo_args)
         .arg("--")
+        .args(rustc_args)
         .arg("--print")
         .arg("cfg")
         .output()?;
@@ -272,8 +278,8 @@ impl Target {
     /// target, then this will be `None`. The surrounding double quotes, `"` of
     /// the raw output from the `cargo rustc -- --print cfg` command are
     /// removed.
-    pub fn env(&self) -> Option<&String> {
-        self.env.as_ref()
+    pub fn env(&self) -> Option<&str> {
+        self.env.as_deref()
     }
 
     /// The family for the target configuration.
@@ -282,8 +288,8 @@ impl Target {
     /// `windows` or `unix`. If a family is not provided, then this will be
     /// `None`. The surrounding double quotes of the raw output from the `cargo
     /// rustc -- --print cfg` command are removed.
-    pub fn family(&self) -> Option<&String> {
-        self.family.as_ref()
+    pub fn family(&self) -> Option<&str> {
+        self.family.as_deref()
     }
 
     /// A list of all features enabled for the target configuration.
@@ -292,8 +298,8 @@ impl Target {
     ///
     /// The surrounding double quotes of the raw output from the `cargo rustc --
     /// --print cfg` command are removed.
-    pub fn features(&self) -> &Vec<String> {
-        &self.features
+    pub fn features(&self) -> Vec<&str> {
+        self.features.iter().map(std::ops::Deref::deref).collect()
     }
 
     /// The operating system (OS) for the target configuration.
@@ -321,8 +327,8 @@ impl Target {
     /// `apple`, `unknown`, and `pc`. If no vendor is provided for a target,
     /// then this is `None`. The surrounding double quotes, `"`, of the raw
     /// output from the `cargo rustc -- --print cfg` command are removed.
-    pub fn vendor(&self) -> Option<&String> {
-        self.vendor.as_ref()
+    pub fn vendor(&self) -> Option<&str> {
+        self.vendor.as_deref()
     }
 }
 

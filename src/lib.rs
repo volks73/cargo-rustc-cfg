@@ -28,11 +28,16 @@
 //! [build scripts]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 //! [Cargo environment variables]: https://doc.rust-lang.org/cargo/reference/environment-variables.html#environment-variables-cargo-sets-for-build-scripts
 
+use std::env;
 use std::ffi::OsStr;
+use std::path::PathBuf;
 use std::process::{Command, Output};
 
-/// The command line name of Cargo application.
+/// The command line name of the Cargo application.
 pub const CARGO: &str = "cargo";
+
+/// The environment variable name for the Cargo appplication.
+pub const CARGO_VARIABLE: &str = "CARGO";
 
 /// The command line name of the Rust compiler subcommand for Cargo.
 pub const RUSTC: &str = "rustc";
@@ -111,7 +116,11 @@ impl Cfg {
         S: AsRef<OsStr>
 
     {
-        let output = Command::new(CARGO)
+        let output = Command::new(
+            env::var(CARGO_VARIABLE)
+                .map(PathBuf::from)
+                .ok()
+                .unwrap_or_else(|| PathBuf::from(CARGO)))
             .arg(RUSTC)
             .args(args)
             .arg("--")

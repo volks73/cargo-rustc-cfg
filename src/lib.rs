@@ -218,7 +218,7 @@ impl Cfg {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```
     /// # use cargo_rustc_cfg::{Cfg, Error};
     /// let cfg = Cfg::with_triple("i686-pc-windows-gnu")?;
     /// assert_eq!(cfg.target().arch(), "x86");
@@ -249,7 +249,7 @@ impl Cfg {
     ///
     /// This can be used to add the `--target <TRIPLE>` option,
     ///
-    /// ```no_run
+    /// ```
     /// # use cargo_rustc_cfg::{Cfg, Error};
     /// let cfg = Cfg::with_args(&["--target", "i686-pc-windows-msvc"], std::iter::empty::<&str>())?;
     /// assert_eq!(cfg.target().arch(), "x86");

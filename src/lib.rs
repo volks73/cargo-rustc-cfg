@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! The goal of this library, a.k.a. crate, is to make the compiler
-//! configuration at the time of building a project with [Cargo] available to
-//! [third-party] [Cargo custom subcommands] by running the `cargo rustc --
-//! --print cfg` command and parsing its output. This library is _not_ recommended
-//! for [build scripts] as the compiler configuration information is available
-//! via [Cargo environment variables] that are passed to build scripts at run
+//! The goal of this library, a.k.a. crate, is to provide access to the compiler
+//! configuration at Cargo build time of a project for use with [third-party]
+//! [Cargo custom subcommands] by running the `cargo rustc -- --print cfg`
+//! command and parsing its output. This library is _not_ recommended for [build
+//! scripts] as the compiler configuration information is available via [Cargo
+//! environment variables] that are passed to build scripts at run
 //! time.
 //!
 //! If the Rust compiler (rustc) target is `x86_64-pc-windows-msvc`, then the
@@ -52,13 +52,13 @@
 //! types for accessing the various values from the output. The values for any lines containing
 //! a key-value pair and prepended by the `target_` string are available in the
 //! [`Target`] type with the double quotes, `"`, removed. Any lines that are not
-//! recognized and/or not a target key-value pair are stored, unaltered and can
+//! recognized and/or not a target key-value pair are stored (unaltered) and can
 //! be obtained with the [`Cfg::extras`] method.
 //!
 //! # Examples
 //!
-//! Get the configuration for the default Rust compiler (rustc) target within
-//! the Cargo "environment" if the rustc target is `x86_64-pc-windows-msvc`, then:
+//! Get the configuration for the default rustc target as configured by Cargo
+//! if the rustc target is `x86_64-pc-windows-msvc`:
 //!
 //! ```
 //! # extern crate cargo_rustc_cfg;
@@ -226,15 +226,18 @@
 //! # }
 //! ```
 //!
-//! Get the configuration for a specific Rust compiler (rustc) target triple
-//! within the Cargo "environment" but using the [`Cfg::with_args`] with the
-//! `--target <TRIPLE>` option for the `cargo rustc` subcommand:
+//! Get the configuration for a specific rustc target triple using the
+//! [`Cfg::with_args`] with the `--target <TRIPLE>` option for the `cargo rustc`
+//! subcommand:
 //!
 //! ```
 //! # extern crate cargo_rustc_cfg;
 //! # use cargo_rustc_cfg::{Cfg, Error};
 //! # fn main() -> std::result::Result<(), Error> {
-//! let cfg = Cfg::with_args(&["--target", "i686-pc-windows-msvc"], std::iter::empty::<&str>())?;
+//! let cfg = Cfg::with_args(
+//!     &["--target", "i686-pc-windows-msvc"],
+//!     std::iter::empty::<&str>()
+//! )?;
 //! assert_eq!(cfg.target().arch(), "x86");
 //! assert_eq!(cfg.target().endian(), "little");
 //! assert_eq!(cfg.target().env(), Some("msvc"));
@@ -246,7 +249,7 @@
 //! # }
 //! ```
 //!
-//! The above use-case is relatively common, but it would be tedious to
+//! The above use-case is relatively common, but it is tedious to
 //! routinely use the [`Cfg::with_args`] method. The [`Cfg::with_triple`]
 //! method is available as a shorthand for the previous example:
 //!
@@ -304,13 +307,76 @@ impl Cfg {
     ///
     /// This executes the `cargo rustc -- --print cfg` command. If the
     /// configuration for a specific Rust compiler (rustc) target triple is
-    /// desired, then the [`Cfg::with_triple`] should be used. The
-    /// [`Cfg::with_triple`] implementation executes the `cargo rustc --target
-    /// <TRIPLE> -- --print cfg` command.
+    /// desired, then the [`Cfg::with_triple`] method should be used.
     ///
     /// If additional flags or options need to be included as arguments to the
     /// `cargo rustc -- --print cfg` command, then use the [`Cfg::with_args`]
     /// method.
+    ///
+    /// # Examples
+    ///
+    /// If the default rustc compiler is a Windows target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # #[cfg(all(target_arch = "x86_64", target_os = "windows", target_env = "msvc", target_vendor = "pc"))]
+    /// # mod x86_64_pc_windows_msvc {
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::new()?;
+    /// assert_eq!(cfg.target().arch(), "x86_64");
+    /// assert_eq!(cfg.target().endian(), "little");
+    /// assert_eq!(cfg.target().env(), Some("msvc"));
+    /// assert_eq!(cfg.target().family(), Some("windows"));
+    /// assert_eq!(cfg.target().os(), "windows");
+    /// assert_eq!(cfg.target().pointer_width(), "64");
+    /// assert_eq!(cfg.target().vendor(), Some("pc"));
+    /// # Ok(())
+    /// # }
+    /// # }
+    /// ```
+    ///
+    /// If the default rustc target is a Linux target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # #[cfg(all(target_arch = "x86_64", target_os = "linux"))]
+    /// # mod x86_64_unknown_linux_gnu {
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::new()?;
+    /// assert_eq!(cfg.target().arch(), "x86_64");
+    /// assert_eq!(cfg.target().endian(), "little");
+    /// assert_eq!(cfg.target().env(), None);
+    /// assert_eq!(cfg.target().family(), Some("unix"));
+    /// assert_eq!(cfg.target().os(), "os");
+    /// assert_eq!(cfg.target().pointer_width(), "64");
+    /// assert_eq!(cfg.target().vendor(), Some("unknown"));
+    /// # Ok(())
+    /// # }
+    /// # }
+    /// ```
+    ///
+    /// If the default rustc target is an Apple target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # #[cfg(all(target_arch = "x86_64", target_os = "macos"))]
+    /// # mod x86_64_apple_darwin {
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::new()?;
+    /// assert_eq!(cfg.target().arch(), "x86_64");
+    /// assert_eq!(cfg.target().endian(), "little");
+    /// assert_eq!(cfg.target().env(), None);
+    /// assert_eq!(cfg.target().family(), Some("unix"));
+    /// assert_eq!(cfg.target().os(), "os");
+    /// assert_eq!(cfg.target().pointer_width(), "64");
+    /// assert_eq!(cfg.target().vendor(), Some("apple"));
+    /// # Ok(())
+    /// # }
+    /// # }
+    /// ```
     ///
     /// [`Cfg::with_triple`]: #method.with_triple
     /// [`Cfg::with_args`]: #method.with_args
@@ -325,10 +391,51 @@ impl Cfg {
     /// recognized target triples can be obtained using the `rustc --print
     /// target-list` command.
     ///
+    /// This is a helper, or shorthand, method for:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_args(
+    ///     &["--target", "i686-pc-windows-msvc"],
+    ///     std::iter::empty::<&str>()
+    /// )?;
+    /// # assert_eq!(cfg.target().arch(), "x86");
+    /// # assert_eq!(cfg.target().endian(), "little");
+    /// # assert_eq!(cfg.target().env(), Some("msvc"));
+    /// # assert_eq!(cfg.target().family(), Some("windows"));
+    /// # assert_eq!(cfg.target().os(), "windows");
+    /// # assert_eq!(cfg.target().pointer_width(), "32");
+    /// # assert_eq!(cfg.target().vendor(), Some("pc"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// which becomes:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("i686-pc-windows-msvc")?;
+    /// # assert_eq!(cfg.target().arch(), "x86");
+    /// # assert_eq!(cfg.target().endian(), "little");
+    /// # assert_eq!(cfg.target().env(), Some("msvc"));
+    /// # assert_eq!(cfg.target().family(), Some("windows"));
+    /// # assert_eq!(cfg.target().os(), "windows");
+    /// # assert_eq!(cfg.target().pointer_width(), "32");
+    /// # assert_eq!(cfg.target().vendor(), Some("pc"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
     /// # Examples
     ///
     /// ```
+    /// # extern crate cargo_rustc_cfg;
     /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
     /// let cfg = Cfg::with_triple("i686-pc-windows-gnu")?;
     /// assert_eq!(cfg.target().arch(), "x86");
     /// assert_eq!(cfg.target().endian(), "little");
@@ -337,7 +444,8 @@ impl Cfg {
     /// assert_eq!(cfg.target().os(), "windows");
     /// assert_eq!(cfg.target().pointer_width(), "32");
     /// assert_eq!(cfg.target().vendor(), Some("pc"));
-    /// # Ok::<(), Error>(())
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn with_triple(s: &str) -> Result<Self, Error> {
         Self::with_args(&["--target", s], std::iter::empty::<&str>())
@@ -359,7 +467,9 @@ impl Cfg {
     /// This can be used to add the `--target <TRIPLE>` option,
     ///
     /// ```
+    /// # extern crate cargo_rustc_cfg;
     /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
     /// let cfg = Cfg::with_args(&["--target", "i686-pc-windows-msvc"], std::iter::empty::<&str>())?;
     /// assert_eq!(cfg.target().arch(), "x86");
     /// assert_eq!(cfg.target().endian(), "little");
@@ -368,7 +478,8 @@ impl Cfg {
     /// assert_eq!(cfg.target().os(), "windows");
     /// assert_eq!(cfg.target().pointer_width(), "32");
     /// assert_eq!(cfg.target().vendor(), Some("pc"));
-    /// # Ok::<(), Error>(())
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// but this is a common enough use-case that a specific method for
@@ -376,7 +487,9 @@ impl Cfg {
     /// [`Cfg::with_triple`] method,
     ///
     /// ```
+    /// # extern crate cargo_rustc_cfg;
     /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
     /// let cfg = Cfg::with_triple("i686-pc-windows-msvc")?;
     /// assert_eq!(cfg.target().arch(), "x86");
     /// assert_eq!(cfg.target().endian(), "little");
@@ -385,8 +498,35 @@ impl Cfg {
     /// assert_eq!(cfg.target().os(), "windows");
     /// assert_eq!(cfg.target().pointer_width(), "32");
     /// assert_eq!(cfg.target().vendor(), Some("pc"));
-    /// # Ok::<(), Error>(())
+    /// # Ok(())
+    /// # }
     /// ```
+    ///
+    /// This method can be used also add command line arguments that are
+    /// ultimately passed to the Rust compiler (rustc). For example, the
+    /// [`-C/--codegen`] command line option to add the static linking
+    /// feature to the target's compiler configuration:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_args(
+    ///     &["--target", "x86_64-pc-windows-msvc"],
+    ///     &["-C", "target-feature=+crt-static"]
+    /// )?;
+    /// assert!(cfg.target().features().contains(&"crt-static"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`target_env`]: https://doc.rust-lang.org/reference/conditioal-compilation.html#target_env
+    /// [Conditional Compilation]: https://doc.rust-lang.org/reference/conditional-compilation.html
+    /// [Rust Reference book]: https://doc.rust-lang.org/reference/introduction.html
+    /// [`-C/--codegen`]: https://doc.rust-lang.org/rustc/command-line-arguments.html#-c--codegen-code-generation-options
+    /// [`rustflags`]: https://doc.rust-lang.org/cargo/reference/config.html#buildrustflags
+    /// [configuration]: https://doc.rust-lang.org/cargo/reference/config.html
+    /// [`RUSTFLAGS`]: https://doc.rust-lang.org/cargo/reference/environment-variables.html
     ///
     /// [`Cfg::with_triple`]: #method.with_triple
     /// [`std::process::Command::args`]: https://doc.rust-lang.org/std/process/struct.Command.html#method.args
@@ -496,14 +636,28 @@ impl Cfg {
     /// These are any lines that were not recognized as target key-value lines,
     /// i.e. `key="value"`. Unlike the target key-value lines, any double
     /// quotes, `"`, are _not_ removed.
-    pub fn extras(&self) -> &Vec<String> {
-        &self.extras
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-pc-windows-msvc")?;
+    /// assert!(cfg.extras().contains(&"debug_assertions"));
+    /// assert!(cfg.extras().contains(&"windows"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn extras(&self) -> Vec<&str> {
+        self.extras.iter().map(|s| &**s).collect()
     }
 
     /// All output that is prepended by the `target_` string.
     ///
     /// These are all the recognized target key-value lines, i.e.
-    /// `target_<key>="<value>"`. The double quotes, `"` are removed for the values.
+    /// `target_<key>="<value>"`. The double quotes, `"` are removed for the
+    /// values.
     pub fn target(&self) -> &Target {
         &self.target
     }
@@ -539,94 +693,403 @@ pub struct Target {
 }
 
 impl Target {
-    /// The CPU architecture for the target configuration.
+    /// The target's CPU architecture.
     ///
     /// This is the `target_arch` line in the output. See the [`target_arch`]
-    /// section on [Conditional Compilation] for example values. The surrounding
-    /// double quotes, `"`, of the raw output of the `cargo rustc -- --print
-    /// cfg` command are removed.
+    /// section on [Conditional Compilation] in the [Rust Reference book] for
+    /// example values. The surrounding double quotes, `"`, of the raw output of
+    /// the `cargo rustc -- --print cfg` command are removed.
+    ///
+    /// # Examples
+    ///
+    /// For a 32-bit Intel x86 target:
     ///
     /// ```
     /// # extern crate cargo_rustc_cfg;
     /// # use cargo_rustc_cfg::{Cfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
-    /// let cfg = Cfg::with_triple("i686-pc-windows-gnu")?;
+    /// let cfg = Cfg::with_triple("i686-pc-windows-msvc")?;
     /// assert_eq!(cfg.target().arch(), "x86");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// For a 64-bit Intel x86 target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-pc-windows-msvc")?;
+    /// assert_eq!(cfg.target().arch(), "x86_64");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// For a 32-bit ARM target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("thumbv7a-pc-windows-msvc")?;
+    /// assert_eq!(cfg.target().arch(), "arm");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// For a 64-bit ARM target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("aarch64-pc-windows-msvc")?;
+    /// assert_eq!(cfg.target().arch(), "aarch64");
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// [`target_arch`]: https://doc.rust-lang.org/reference/conditional-compilation.html#target_arch
     /// [Conditional Compilation]: https://doc.rust-lang.org/reference/conditional-compilation.html
+    /// [Rust Reference book]: https://doc.rust-lang.org/reference/introduction.html
     pub fn arch(&self) -> &str {
         &self.arch
     }
 
-    /// The endianness for the target configuration.
+    /// The target's CPU endianness.
     ///
-    /// This is the `target_endian` line in the output. Typical values included
-    /// either `little` or `big`. The surrounding double quotes, `"`, of the raw
-    /// output of the `cargo rustc -- --print cfg` command are removed.
+    /// This is the `target_endian` line in the output. See the
+    /// [`target_endian`] section on [Conditional Compilation] in the [Rust
+    /// Reference book] for example values. The surrounding double quotes, `"`,
+    /// of the raw output of the `cargo rustc -- --print cfg` command are
+    /// removed.
+    ///
+    /// # Examples
+    ///
+    /// For a little endian target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-pc-windows-msvc")?;
+    /// assert_eq!(cfg.target().endian(), "little");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// For a big endian target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("sparc64-unknown-linux-gnu")?;
+    /// assert_eq!(cfg.target().endian(), "big");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`target_endian`]: https://doc.rust-lang.org/reference/conditional-compilation.html#target_endian
+    /// [Conditional Compilation]: https://doc.rust-lang.org/reference/conditional-compilation.html
+    /// [Rust Reference book]: https://doc.rust-lang.org/reference/introduction.html
     pub fn endian(&self) -> &str {
         &self.endian
     }
 
-    /// The environment for the target configuration.
+    /// The Application Binary Interface (ABI) or `libc` used by the target.
     ///
-    /// This is the `target_env` line in the output. Typical values include
-    /// `gnu`, `msvc`, `musl`, etc. If an environment is used or provided by a
-    /// target, then this will be `None`. The surrounding double quotes, `"` of
-    /// the raw output from the `cargo rustc -- --print cfg` command are
+    /// This is the `target_env` line in the output. See the
+    /// [`target_env`] section on [Conditional Compilation] in the [Rust
+    /// Reference book] for example values. The surrounding double quotes, `"`,
+    /// of the raw output of the `cargo rustc -- --print cfg` command are
     /// removed.
+    ///
+    /// This will return `None` if the `target_env` line is missing from the
+    /// output or the value is the empty string, `""`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-pc-windows-gnu")?;
+    /// assert_eq!(cfg.target().env(), Some("gnu"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`target_env`]: https://doc.rust-lang.org/reference/conditional-compilation.html#target_env
+    /// [Conditional Compilation]: https://doc.rust-lang.org/reference/conditional-compilation.html
+    /// [Rust Reference book]: https://doc.rust-lang.org/reference/introduction.html
     pub fn env(&self) -> Option<&str> {
         self.env.as_deref()
     }
 
-    /// The family for the target configuration.
+    /// The target's operating system family.
     ///
-    /// This is the `target_family` line in the output. Example values include:
-    /// `windows` or `unix`. If a family is not provided, then this will be
-    /// `None`. The surrounding double quotes of the raw output from the `cargo
-    /// rustc -- --print cfg` command are removed.
+    /// This is the `target_family` line in the output. See the
+    /// [`target_family`] section on [Conditional Compilation] in the [Rust
+    /// Reference book] for example values. The surrounding double quotes, `"`,
+    /// of the raw output of the `cargo rustc -- --print cfg` command are
+    /// removed.
+    ///
+    /// This will return `None` if the `target_family` key-value pair was missing
+    /// from the output or the value was the empty string, `""`.
+    ///
+    /// # Examples
+    ///
+    /// For a Windows target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-pc-windows-msvc")?;
+    /// assert_eq!(cfg.target().family(), Some("windows"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// For a Linux target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-unknown-linux-gnu")?;
+    /// assert_eq!(cfg.target().family(), Some("unix"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// For an Apple target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-apple-darwin")?;
+    /// assert_eq!(cfg.target().family(), Some("unix"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`target_family`]: https://doc.rust-lang.org/reference/conditional-compilation.html#target_family
+    /// [Conditional Compilation]: https://doc.rust-lang.org/reference/conditional-compilation.html
+    /// [Rust Reference book]: https://doc.rust-lang.org/reference/introduction.html
     pub fn family(&self) -> Option<&str> {
         self.family.as_deref()
     }
 
-    /// A list of all features enabled for the target configuration.
+    /// The features enabled for a target's compilation.
     ///
-    /// If a feature is _not_ enabled, then it will not be in the Vector.
+    /// This is any `target_feature` line in the output. See the
+    /// [`target_feature`] section on [Conditional Compilation] in the [Rust
+    /// Reference book] for example values. The surrounding double quotes, `"`,
+    /// of the raw output of the `cargo rustc -- --print cfg` command are
+    /// removed.
     ///
-    /// The surrounding double quotes of the raw output from the `cargo rustc --
-    /// --print cfg` command are removed.
+    /// Compiler features are enabled and disabled using either the Rust
+    /// compiler's (rustc) [`-C/--codegen`] command line option, the Cargo
+    /// [`rustflags`] key-value [configuration], or the [`RUSTFLAGS`] environment
+    /// variable supported by Cargo but not rustc.
+    ///
+    /// # Examples
+    ///
+    /// Using the [`RUSTFLAGS`] environment variable to add the static linking
+    /// feature to the target's compiler configuration:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// std::env::set_var("RUSTFLAGS", "-C target-feature=+crt-static");
+    /// let cfg = Cfg::with_triple("x86_64-pc-windows-msvc")?;
+    /// std::env::set_var("RUSTFLAGS", "");
+    /// assert!(cfg.target().features().contains(&"crt-static"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Using the [`-C/--codegen`] command line option to add the static linking
+    /// feature to the target's compiler configuration:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_args(
+    ///     &["--target", "x86_64-pc-windows-msvc"],
+    ///     &["-C", "target-feature=+crt-static"]
+    /// )?;
+    /// assert!(cfg.target().features().contains(&"crt-static"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`target_feature`]: https://doc.rust-lang.org/reference/conditioal-compilation.html#target_feature
+    /// [Conditional Compilation]: https://doc.rust-lang.org/reference/conditional-compilation.html
+    /// [Rust Reference book]: https://doc.rust-lang.org/reference/introduction.html
+    /// [`-C/--codegen`]: https://doc.rust-lang.org/rustc/command-line-arguments.html#-c--codegen-code-generation-options
+    /// [`rustflags`]: https://doc.rust-lang.org/cargo/reference/config.html#buildrustflags
+    /// [configuration]: https://doc.rust-lang.org/cargo/reference/config.html
+    /// [`RUSTFLAGS`]: https://doc.rust-lang.org/cargo/reference/environment-variables.html
     pub fn features(&self) -> Vec<&str> {
-        self.features.iter().map(std::ops::Deref::deref).collect()
+        self.features.iter().map(|s| &**s).collect()
     }
 
-    /// The operating system (OS) for the target configuration.
+    /// The target's operating system.
     ///
-    /// This is the `target_os` line in the output. Example values include:
-    /// `linux`, `macOS`, and `windows`. For Windows, this is the same as the
-    /// target's family. The surrounding double quotes, `"`, of the raw output
-    /// from the `cargo rustc -- --print cfg` command are removed.
+    /// This is the `target_os` line in the output. See the
+    /// [`target_os`] section on [Conditional Compilation] in the [Rust
+    /// Reference book] for example values. The surrounding double quotes, `"`,
+    /// of the raw output of the `cargo rustc -- --print cfg` command are
+    /// removed.
+    ///
+    /// # Examples
+    ///
+    /// For a Windows target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-pc-windows-msvc")?;
+    /// assert_eq!(cfg.target().os(), "windows");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// For a Linux target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-unknown-linux-gnu")?;
+    /// assert_eq!(cfg.target().os(), "linux");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// For an Apple target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-apple-darwin")?;
+    /// assert_eq!(cfg.target().os(), "macos");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Note, the target's OS is different from the target's family for Apple
+    /// targets.
+    ///
+    /// [`target_family`]: https://doc.rust-lang.org/reference/conditional-compilation.html#target_family
+    /// [Conditional Compilation]: https://doc.rust-lang.org/reference/conditional-compilation.html
+    /// [Rust Reference book]: https://doc.rust-lang.org/reference/introduction.html
     pub fn os(&self) -> &str {
         &self.os
     }
 
-    /// The pointer width for the target configuration.
+    /// The target's pointer width in bits, but as string.
     ///
-    /// This is the `target_pointer_width` line in the output. Example values
-    /// include: `32` or `64`. The surrounding double quotes, `"`, of the raw
-    /// output from the `cargo rustc -- --print cfg` command are removed.
+    /// This is the `target_pointer_width` line in the output. See the
+    /// [`target_pointer_width`] section on [Conditional Compilation] in the
+    /// [Rust Reference book] for example values. The surrounding double quotes,
+    /// `"`, of the raw output of the `cargo rustc -- --print cfg` command are
+    /// removed.
+    ///
+    /// # Examples
+    ///
+    /// For a 64-bit target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-pc-windows-msvc")?;
+    /// assert_eq!(cfg.target().pointer_width(), "64");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// For a 32-bit target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("i686-pc-windows-msvc")?;
+    /// assert_eq!(cfg.target().pointer_width(), "32");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`target_pointer_width`]: https://doc.rust-lang.org/reference/conditional-compilation.html#target_pointer_width
+    /// [Conditional Compilation]: https://doc.rust-lang.org/reference/conditional-compilation.html
+    /// [Rust Reference book]: https://doc.rust-lang.org/reference/introduction.html
     pub fn pointer_width(&self) -> &str {
         &self.pointer_width
     }
 
-    /// The vendor for the target configuration.
+    /// The target's vendor.
     ///
-    /// This is the `target_vendor` line in the output. Example values include:
-    /// `apple`, `unknown`, and `pc`. If no vendor is provided for a target,
-    /// then this is `None`. The surrounding double quotes, `"`, of the raw
-    /// output from the `cargo rustc -- --print cfg` command are removed.
+    /// This is the `target_vendor` line in the output. See the
+    /// [`target_vendor`] section on [Conditional Compilation] in the [Rust
+    /// Reference book] for example values. The surrounding double quotes, `"`,
+    /// of the raw output of the `cargo rustc -- --print cfg` command are
+    /// removed.
+    ///
+    /// This will return `None` if the `target_vendor` line is missing or the
+    /// value is the empty string, `""`.
+    ///
+    /// # Examples
+    ///
+    /// For a Windows target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-pc-windows-msvc")?;
+    /// assert_eq!(cfg.target().vendor(), Some("pc"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// For a Linux target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-unknown-linux-gnu")?;
+    /// assert_eq!(cfg.target().vendor(), Some("unknown"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// For an Apple target:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let cfg = Cfg::with_triple("x86_64-apple-darwin")?;
+    /// assert_eq!(cfg.target().vendor(), Some("apple"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`target_vendor`]: https://doc.rust-lang.org/reference/conditional-compilation.html#target_vendor
+    /// [Conditional Compilation]: https://doc.rust-lang.org/reference/conditional-compilation.html
+    /// [Rust Reference book]: https://doc.rust-lang.org/reference/introduction.html
     pub fn vendor(&self) -> Option<&str> {
         self.vendor.as_deref()
     }
@@ -702,110 +1165,5 @@ impl From<std::io::Error> for Error {
 impl From<std::string::FromUtf8Error> for Error {
     fn from(e: std::string::FromUtf8Error) -> Self {
         Self::FromUtf8(e)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    mod target {
-        use super::*;
-
-        #[test]
-        fn x86_64_pc_windows_msvc_target_is_correct() {
-            let target = Cfg::with_triple("x86_64-pc-windows-msvc").unwrap().into_target();
-            assert_eq!(target.arch(), "x86_64");
-            assert_eq!(target.endian(), "little");
-            assert_eq!(target.env(), Some("msvc"));
-            assert_eq!(target.family(), Some("windows"));
-            assert_eq!(target.os(), "windows");
-            assert_eq!(target.pointer_width(), "64");
-            assert_eq!(target.vendor(), Some("pc"));
-        }
-
-        #[test]
-        fn x86_64_pc_windows_gnu_target_is_correct() {
-            let target = Cfg::with_triple("x86_64-pc-windows-gnu").unwrap().into_target();
-            assert_eq!(target.arch(), "x86_64");
-            assert_eq!(target.endian(), "little");
-            assert_eq!(target.env(), Some("gnu"));
-            assert_eq!(target.family(), Some("windows"));
-            assert_eq!(target.os(), "windows");
-            assert_eq!(target.pointer_width(), "64");
-            assert_eq!(target.vendor(), Some("pc"));
-        }
-
-        #[test]
-        fn i686_pc_windows_msvc_target_is_correct() {
-            let target = Cfg::with_triple("i686-pc-windows-msvc").unwrap().into_target();
-            assert_eq!(target.arch(), "x86");
-            assert_eq!(target.endian(), "little");
-            assert_eq!(target.env(), Some("msvc"));
-            assert_eq!(target.family(), Some("windows"));
-            assert_eq!(target.os(), "windows");
-            assert_eq!(target.pointer_width(), "32");
-            assert_eq!(target.vendor(), Some("pc"));
-        }
-
-        #[test]
-        fn i686_pc_windows_gnu_target_is_correct() {
-            let target = Cfg::with_triple("i686-pc-windows-gnu").unwrap().into_target();
-            assert_eq!(target.arch(), "x86");
-            assert_eq!(target.endian(), "little");
-            assert_eq!(target.env(), Some("gnu"));
-            assert_eq!(target.family(), Some("windows"));
-            assert_eq!(target.os(), "windows");
-            assert_eq!(target.pointer_width(), "32");
-            assert_eq!(target.vendor(), Some("pc"));
-        }
-
-        #[test]
-        fn x86_64_unknown_linux_gnu_target_is_correct() {
-            let target = Cfg::with_triple("x86_64-unknown-linux-gnu").unwrap().into_target();
-            assert_eq!(target.arch(), "x86_64");
-            assert_eq!(target.endian(), "little");
-            assert_eq!(target.env(), Some("gnu"));
-            assert_eq!(target.family(), Some("unix"));
-            assert_eq!(target.os(), "linux");
-            assert_eq!(target.pointer_width(), "64");
-            assert_eq!(target.vendor(), Some("unknown"));
-        }
-
-        #[test]
-        fn i686_unknown_linux_gnu_target_is_correct() {
-            let target = Cfg::with_triple("i686-unknown-linux-gnu").unwrap().into_target();
-            assert_eq!(target.arch(), "x86");
-            assert_eq!(target.endian(), "little");
-            assert_eq!(target.env(), Some("gnu"));
-            assert_eq!(target.family(), Some("unix"));
-            assert_eq!(target.os(), "linux");
-            assert_eq!(target.pointer_width(), "32");
-            assert_eq!(target.vendor(), Some("unknown"));
-        }
-
-        #[test]
-        fn x86_64_apple_darwin_target_is_correct() {
-            let target = Cfg::with_triple("x86_64-apple-darwin").unwrap().into_target();
-            assert_eq!(target.arch(), "x86_64");
-            assert_eq!(target.endian(), "little");
-            assert_eq!(target.env(), None);
-            assert_eq!(target.family(), Some("unix"));
-            assert_eq!(target.os(), "macos");
-            assert_eq!(target.pointer_width(), "64");
-            assert_eq!(target.vendor(), Some("apple"));
-        }
-
-        #[test]
-        fn i686_apple_darwin_target_is_correct() {
-            let target = Cfg::with_triple("i686-apple-darwin").unwrap().into_target();
-            assert_eq!(target.arch(), "x86");
-            assert_eq!(target.endian(), "little");
-            assert_eq!(target.env(), None);
-            assert_eq!(target.family(), Some("unix"));
-            assert_eq!(target.os(), "macos");
-            assert_eq!(target.pointer_width(), "32");
-            assert_eq!(target.vendor(), Some("apple"));
-        }
     }
 }

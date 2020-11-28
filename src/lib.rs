@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! # `cargo-rustc-cfg` library
-//!
 //! The goal of this library, a.k.a. crate, is to make the compiler
 //! configuration at the time of building a project with [Cargo] available to
 //! [third-party] [Cargo custom subcommands] by running the `cargo rustc --
-//! --print cfg` command and parse its output. This library is _not_ recommended
+//! --print cfg` command and parsing its output. This library is _not_ recommended
 //! for [build scripts] as the compiler configuration information is available
 //! via [Cargo environment variables] that are passed to build scripts at run
 //! time.
@@ -25,13 +23,12 @@
 //! # Examples
 //!
 //! Get the configuration for the default Rust compiler (rustc) target within
-//! the Cargo "environment":
+//! the Cargo "environment" if the rustc target is `x86_64-pc-windows-msvc`, then:
 //!
 //! ```
 //! # use cargo_rustc_cfg::{Cfg, Error};
 //! # #[cfg(all(target_arch = "x86_64", target_os = "windows", target_env = "msvc", target_vendor = "pc"))]
 //! # fn main() -> std::result::Result<(), Error> {
-//! // If the default Rust compiler (rustc) target is 'x86_64-pc-windows-msvc', then...
 //! let cfg = Cfg::new()?;
 //! assert_eq!(cfg.target().arch(), "x86_64");
 //! assert_eq!(cfg.target().endian(), "little");
@@ -42,9 +39,13 @@
 //! assert_eq!(cfg.target().vendor(), Some("pc"));
 //! # Ok(())
 //! # }
+//! ```
+//!
+//! If the default rustc target is `x86_64-pc-windows-gnu`, then:
+//!
+//! ```
 //! # #[cfg(all(target_arch = "x86_64", target_os = "windows", target_env = "gnu", target_vendor = "pc"))]
 //! # fn main() -> std::result::Result<(), Error> {
-//! // If the default Rust compiler (rustc) target is 'x86_64-pc-windows-gnu', then...
 //! let cfg = Cfg::new()?;
 //! assert_eq!(cfg.target().arch(), "x86_64");
 //! assert_eq!(cfg.target().endian(), "little");
@@ -55,9 +56,13 @@
 //! assert_eq!(cfg.target().vendor(), Some("pc"));
 //! # Ok(())
 //! # }
+//! ```
+//!
+//! If the default rustc target is `x86_64-unknown-linux-gnu`, then:
+//!
+//! ```
 //! # #[cfg(all(target_arch = "x86_64", target_os = "linux"))]
 //! # fn main() -> std::result::Result<(), Error> {
-//! // If the default Rust compiler (rustc) target is 'x86_64-unknown-linxu-gnu', then...
 //! let cfg = Cfg::new()?;
 //! assert_eq!(cfg.target().arch(), "x86_64");
 //! assert_eq!(cfg.target().endian(), "little");
@@ -67,9 +72,13 @@
 //! assert_eq!(cfg.target().pointer_width(), "64");
 //! assert_eq!(cfg.target().vendor(), Some("unknown"));
 //! # }
+//! ```
+//!
+//! If the default rustc target is `x86_64-apple-darwin`, then:
+//!
+//! ```
 //! # #[cfg(all(target_arch = "x86_64", target_os = "macos"))]
 //! # fn main() -> std::result::Result<(), Error> {
-//! // If the default Rust compiler (rustc) target is 'x86_64-apple-darwin', then...
 //! let cfg = Cfg::new()?;
 //! assert_eq!(cfg.target().arch(), "x86_64");
 //! assert_eq!(cfg.target().endian(), "little");
@@ -79,11 +88,15 @@
 //! assert_eq!(cfg.target().pointer_width(), "64");
 //! assert_eq!(cfg.target().vendor(), Some("apple"));
 //! # }
+//! ```
+//!
+//! If the default rustc target is `i686-pc-windows-msvc`, then:
+//!
+//! ```
 //! # #[cfg(all(target_arch = "x86", target_os = "windows", target_env = "msvc", target_vendor = "pc"))]
 //! # fn main() -> std::result::Result<(), Error> {
-//! // If the default Rust compiler (rustc) target is 'i686-pc-windows-msvc', then...
 //! let cfg = Cfg::new()?;
-//! assert_eq!(cfg.target().arch(), "x86_64");
+//! assert_eq!(cfg.target().arch(), "x86");
 //! assert_eq!(cfg.target().endian(), "little");
 //! assert_eq!(cfg.target().env(), Some("msvc"));
 //! assert_eq!(cfg.target().family(), Some("windows"));
@@ -92,9 +105,13 @@
 //! assert_eq!(cfg.target().vendor(), Some("pc"));
 //! # Ok(())
 //! # }
+//! ```
+//!
+//! If the default rustc target is `i686-pc-windows-gnu`, then:
+//!
+//! ```
 //! # #[cfg(all(target_arch = "x86", target_os = "windows", target_env = "gnu", target_vendor = "pc"))]
 //! # fn main() -> std::result::Result<(), Error> {
-//! // If the default Rust compiler (rustc) target is 'i686-pc-windows-gnu', then...
 //! let cfg = Cfg::new()?;
 //! assert_eq!(cfg.target().arch(), "x86_64");
 //! assert_eq!(cfg.target().endian(), "little");
@@ -105,9 +122,13 @@
 //! assert_eq!(cfg.target().vendor(), Some("pc"));
 //! # Ok(())
 //! # }
+//! ```
+//!
+//! If the rustc target is `i686-unknown-linux-gnu`, then:
+//!
+//! ```
 //! # #[cfg(all(target_arch = "x86", target_os = "linux"))]
 //! # fn main() -> std::result::Result<(), Error> {
-//! // If the default Rust compiler (rustc) target is 'i686-unknown-linxu-gnu', then...
 //! let cfg = Cfg::new()?;
 //! assert_eq!(cfg.target().arch(), "x86");
 //! assert_eq!(cfg.target().endian(), "little");
@@ -117,9 +138,13 @@
 //! assert_eq!(cfg.target().pointer_width(), "32");
 //! assert_eq!(cfg.target().vendor(), Some("unknown"));
 //! # }
+//! ```
+//!
+//! If the rustc target is `i686-apple-darwin`, then:
+//!
+//! ```
 //! # #[cfg(all(target_arch = "x86", target_os = "macos"))]
 //! # fn main() -> std::result::Result<(), Error> {
-//! // If the default Rust compiler (rustc) target is 'i686-apple-darwin', then...
 //! let cfg = Cfg::new()?;
 //! assert_eq!(cfg.target().arch(), "x86");
 //! assert_eq!(cfg.target().endian(), "little");
@@ -148,9 +173,9 @@
 //! # Ok::<(), Error>(())
 //! ```
 //!
-//! The above use-case is common enough, but tedious to routinely use the
-//! [`Cfg::with_args`] method, that the [`Cfg::with_triple`] method is
-//! available as a shorthand for the previous example:
+//! The above use-case is relatively common, but it would be tedious to
+//! routinely use the [`Cfg::with_args`] method. The [`Cfg::with_triple`]
+//! method is available as a shorthand for the previous example:
 //!
 //! ```
 //! # use cargo_rustc_cfg::{Cfg, Error};
@@ -165,6 +190,8 @@
 //! # Ok::<(), Error>(())
 //! ```
 //!
+//! [`Cfg::with_args`]: #method.with_args
+//! [`Cfg::with_triple`]: #method_with_triple
 //! [Cargo]: https://doc.rust-lang.org/cargo/index.html
 //! [third-party]: https://github.com/rust-lang/cargo/wiki/Third-party-cargo-subcommands
 //! [Cargo custom subcommands]: https://doc.rust-lang.org/1.30.0/cargo/reference/external-tools.html#custom-subcommands
@@ -205,6 +232,9 @@ impl Cfg {
     /// If additional flags or options need to be included as arguments to the
     /// `cargo rustc -- --print cfg` command, then use the [`Cfg::with_args`]
     /// method.
+    ///
+    /// [`Cfg::with_triple`]: #method.with_triple
+    /// [`Cfg::with_args`]: #method.with_args
     pub fn new() -> Result<Self, Error> {
         Self::with_args(std::iter::empty::<&str>(), std::iter::empty::<&str>())
     }
@@ -242,7 +272,7 @@ impl Cfg {
     /// options and flags and the `<RUSTC_ARGS>` is replaced with options and
     /// flags that are passed to the Rust compiler command line interface after
     /// the `--` argument but before the `--print cfg` option. See the
-    /// `std::process::Command::args` method for more information about adding
+    /// [`std::process::Command::args`] method for more information about adding
     /// arguments to commands.
     ///
     /// # Examples
@@ -278,6 +308,9 @@ impl Cfg {
     /// assert_eq!(cfg.target().vendor(), Some("pc"));
     /// # Ok::<(), Error>(())
     /// ```
+    ///
+    /// [`Cfg::with_triple`]: #method.with_triple
+    /// [`std::process::Command::args`]: https://doc.rust-lang.org/std/process/struct.Command.html#method.args
     pub fn with_args<C, R, A, U>(cargo_args: C, rustc_args: R) -> Result<Self, Error>
     where
         C: IntoIterator<Item = A>,

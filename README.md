@@ -4,8 +4,8 @@ A Rust library (crate) that runs the `cargo rustc -- --print cfg` command and pa
 
 [![Crates.io](https://img.shields.io/crates/v/cargo-rustc-cfg.svg)](https://crates.io/crates/cargo-rustc-cfg)
 [![GitHub release](https://img.shields.io/github/release/volks73/cargo-rustc-cfg.svg)](https://github.com/volks73/cargo-rustc-cfg/releases)
-[![Crates.io](https://img.shields.io/crates/l/cargo-rustc-cfg.svg)](https://github.com/volks73/cargo-wix#license)
-[![Build Status](https://github.com/volks73/cargo-rustc-cfg/workflows/CI/badge.svg?branch=master)](https://github.com/volks73/cargo-rustc_cfg/actions?query=branch%3main)
+[![Crates.io](https://img.shields.io/crates/l/cargo-rustc-cfg.svg)](https://github.com/volks73/cargo-rustc-cfg#license)
+[![Build Status](https://github.com/volks73/cargo-rustc-cfg/workflows/CI/badge.svg?branch=master)](https://github.com/volks73/cargo-rustc-cfg/actions?query=branch%3main)
 
 ## Quick Start
 
@@ -41,4 +41,3 @@ Tests are running using the `cargo test` command. Currently, only [Documentation
 ## License
 
 The `cargo-rustc-cfg` project is licensed under either the [MIT license](https://opensource.org/licenses/MIT) or [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0). See the [LICENSE-MIT](https://github.com/volks73/cargo-rustc-cfg/blob/master/LICENSE-MIT) or [LICENSE-APACHE](https://github.com/volks73/cargo-rustc-cfg/blob/master/LICENSE-APACHE) files for more information about licensing and copyright.
-

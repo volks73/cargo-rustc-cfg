@@ -218,7 +218,7 @@ impl Cfg {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// # use cargo_rustc_cfg::{Cfg, Error};
     /// let cfg = Cfg::with_triple("i686-pc-windows-gnu")?;
     /// assert_eq!(cfg.target().arch(), "x86");
@@ -249,7 +249,7 @@ impl Cfg {
     ///
     /// This can be used to add the `--target <TRIPLE>` option,
     ///
-    /// ```
+    /// ```no_run
     /// # use cargo_rustc_cfg::{Cfg, Error};
     /// let cfg = Cfg::with_args(&["--target", "i686-pc-windows-msvc"], std::iter::empty::<&str>())?;
     /// assert_eq!(cfg.target().arch(), "x86");
@@ -572,8 +572,105 @@ impl From<std::string::FromUtf8Error> for Error {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    use super::*;
+
+    mod target {
+        use super::*;
+
+        #[test]
+        fn x86_64_pc_windows_msvc_target_is_correct() {
+            let target = Cfg::with_triple("x86_64-pc-windows-msvc").unwrap().into_target();
+            assert_eq!(target.arch(), "x86_64");
+            assert_eq!(target.endian(), "little");
+            assert_eq!(target.env(), Some("msvc"));
+            assert_eq!(target.family(), Some("windows"));
+            assert_eq!(target.os(), "windows");
+            assert_eq!(target.pointer_width(), "64");
+            assert_eq!(target.vendor(), Some("pc"));
+        }
+
+        #[test]
+        fn x86_64_pc_windows_gnu_target_is_correct() {
+            let target = Cfg::with_triple("x86_64-pc-windows-gnu").unwrap().into_target();
+            assert_eq!(target.arch(), "x86_64");
+            assert_eq!(target.endian(), "little");
+            assert_eq!(target.env(), Some("gnu"));
+            assert_eq!(target.family(), Some("windows"));
+            assert_eq!(target.os(), "windows");
+            assert_eq!(target.pointer_width(), "64");
+            assert_eq!(target.vendor(), Some("pc"));
+        }
+
+        #[test]
+        fn i686_pc_windows_msvc_target_is_correct() {
+            let target = Cfg::with_triple("i686-pc-windows-msvc").unwrap().into_target();
+            assert_eq!(target.arch(), "x86");
+            assert_eq!(target.endian(), "little");
+            assert_eq!(target.env(), Some("msvc"));
+            assert_eq!(target.family(), Some("windows"));
+            assert_eq!(target.os(), "windows");
+            assert_eq!(target.pointer_width(), "32");
+            assert_eq!(target.vendor(), Some("pc"));
+        }
+
+        #[test]
+        fn i686_pc_windows_gnu_target_is_correct() {
+            let target = Cfg::with_triple("i686-pc-windows-gnu").unwrap().into_target();
+            assert_eq!(target.arch(), "x86");
+            assert_eq!(target.endian(), "little");
+            assert_eq!(target.env(), Some("gnu"));
+            assert_eq!(target.family(), Some("windows"));
+            assert_eq!(target.os(), "windows");
+            assert_eq!(target.pointer_width(), "32");
+            assert_eq!(target.vendor(), Some("pc"));
+        }
+
+        #[test]
+        fn x86_64_unknown_linux_gnu_target_is_correct() {
+            let target = Cfg::with_triple("x86_64-unknown-linux-gnu").unwrap().into_target();
+            assert_eq!(target.arch(), "x86_64");
+            assert_eq!(target.endian(), "little");
+            assert_eq!(target.env(), Some("gnu"));
+            assert_eq!(target.family(), Some("unix"));
+            assert_eq!(target.os(), "linux");
+            assert_eq!(target.pointer_width(), "64");
+            assert_eq!(target.vendor(), Some("unknown"));
+        }
+
+        #[test]
+        fn i686_unknown_linux_gnu_target_is_correct() {
+            let target = Cfg::with_triple("i686-unknown-linux-gnu").unwrap().into_target();
+            assert_eq!(target.arch(), "x86");
+            assert_eq!(target.endian(), "little");
+            assert_eq!(target.env(), Some("gnu"));
+            assert_eq!(target.family(), Some("unix"));
+            assert_eq!(target.os(), "linux");
+            assert_eq!(target.pointer_width(), "32");
+            assert_eq!(target.vendor(), Some("unknown"));
+        }
+
+        #[test]
+        fn x86_64_apple_darwin_target_is_correct() {
+            let target = Cfg::with_triple("x86_64-apple-darwin").unwrap().into_target();
+            assert_eq!(target.arch(), "x86_64");
+            assert_eq!(target.endian(), "little");
+            assert_eq!(target.env(), None);
+            assert_eq!(target.family(), Some("unix"));
+            assert_eq!(target.os(), "macos");
+            assert_eq!(target.pointer_width(), "64");
+            assert_eq!(target.vendor(), Some("apple"));
+        }
+
+        #[test]
+        fn i686_apple_darwin_target_is_correct() {
+            let target = Cfg::with_triple("i686-apple-darwin").unwrap().into_target();
+            assert_eq!(target.arch(), "x86");
+            assert_eq!(target.endian(), "little");
+            assert_eq!(target.env(), None);
+            assert_eq!(target.family(), Some("unix"));
+            assert_eq!(target.os(), "macos");
+            assert_eq!(target.pointer_width(), "32");
+            assert_eq!(target.vendor(), Some("apple"));
+        }
     }
 }

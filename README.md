@@ -5,7 +5,7 @@ A Rust library (crate) that runs the `cargo rustc -- --print cfg` command and pa
 [![Crates.io](https://img.shields.io/crates/v/cargo-rustc-cfg.svg)](https://crates.io/crates/cargo-rustc-cfg)
 [![GitHub release](https://img.shields.io/github/release/volks73/cargo-rustc-cfg.svg)](https://github.com/volks73/cargo-rustc-cfg/releases)
 [![Crates.io](https://img.shields.io/crates/l/cargo-rustc-cfg.svg)](https://github.com/volks73/cargo-rustc-cfg#license)
-[![Build Status](https://github.com/volks73/cargo-rustc-cfg/workflows/CI/badge.svg?branch=master)](https://github.com/volks73/cargo-rustc-cfg/actions?query=branch%3main)
+[![Build Status](https://github.com/volks73/cargo-rustc-cfg/workflows/CI/badge.svg)](https://github.com/volks73/cargo-rustc-cfg/actions)
 
 [rustc-cfg]: https://crates.io/crates/rustc-cfg
 [Cargo]: http://doc.crates.io

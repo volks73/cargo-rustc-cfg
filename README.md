@@ -28,7 +28,7 @@ println("{:?}", cfg);
 Add the following to a package's manifest (Cargo.toml):
 
 ```toml
-cargo-rustc-cfg = "0.1"
+cargo-rustc-cfg = "0.2"
 ```
 
 If using the [Rust 2015 Edition], then also add the following to the `lib.rs` or `main.rs` source file:

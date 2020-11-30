@@ -311,7 +311,7 @@ pub const RUSTC: &str = "rustc";
 /// typically represented by a "triple" string. Cargo targets are defined and
 /// listed in a package's manifest (Cargo.toml).
 ///
-/// [`Library`]: #enum.CargoTarget.Library
+/// [`Library`]: enum.CargoTarget.html#variant.Library
 #[derive(Clone, Debug, PartialEq)]
 pub enum CargoTarget {
     /// A `--bench <NAME>` Cargo target as defined in the package's manifest
@@ -784,7 +784,7 @@ impl Cfg {
     /// # }
     /// ```
     ///
-    /// [`CargoRustcPrintCfg`]: #struct.CargoRustcPrintCfg
+    /// [`CargoRustcPrintCfg`]: struct.CargoRustcPrintCfg.html
     pub fn host() -> Result<Self, Error> {
         CargoRustcPrintCfg::default().execute()
     }
@@ -827,7 +827,7 @@ impl Cfg {
     /// # }
     /// ```
     ///
-    /// [`CargoRustcPrintCfg`]: #struct.CargoRustcPrintCfg
+    /// [`CargoRustcPrintCfg`]: struct.CargoRustcPrintCfg.html
     pub fn rustc_target<S>(t: S) -> Result<Self, Error>
     where
         S: AsRef<OsStr>

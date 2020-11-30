@@ -19,7 +19,7 @@ A Rust library (crate) that runs the `cargo rustc -- --print cfg` command and pa
 ```rust
 use cargo_rustc_cfg::Cfg;
 
-let cfg = Cfg::new()?;
+let cfg = Cfg::host()?;
 println("{:?}", cfg);
 ```
 
@@ -41,7 +41,7 @@ extern crate cargo_rustc_cfg;
 
 ## Tests
 
-Tests are running using the `cargo test` command. Currently, only [Documentation tests] are implemented as examples becuase for a relatively simple, small library these provide enough coverage.
+Tests are running using the `cargo test` command. Currently, only [documentation tests] are implemented because for a relatively simple, small library these provide enough coverage.
 
 [Documentation tests]: https://doc.rust-lang.org/rustdoc/documentation-tests.html
 

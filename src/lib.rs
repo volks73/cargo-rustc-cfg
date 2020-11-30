@@ -55,8 +55,8 @@
 //! lines that are not recognized and/or not a target key-value pair are stored
 //! (unaltered) and can be obtained with the [`Cfg::extras`] method.
 //!
-//! The [`CargoRustcPrintCfg`] type can be used to customize the `cargo rustc --
-//! --print cfg` command.
+//! The [`CargoRustcPrintCfg`] type can be used to customize the `cargo rustc
+//! --lib -- --print cfg` command.
 //!
 //! # Examples
 //!

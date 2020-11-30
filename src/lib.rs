@@ -731,8 +731,8 @@ impl Default for CargoRustcPrintCfg {
     }
 }
 
-/// A container for the parsed output from the `cargo rustc -- --print cfg`
-/// command.
+/// A container for the parsed output from the `cargo rustc --lib -- --print
+/// cfg` command.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Cfg {
     extras: Vec<String>,

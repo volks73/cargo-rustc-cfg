@@ -273,7 +273,7 @@
 //!
 //! Regardless of using the long or short form to specify a rustc target, the
 //! rustc target must still be installed and available on the host system. It is
-//! recommended to use [rustup] and the `rustc target add <TRIPLE>` command to
+//! recommended to use [rustup] and the `rustup target add <TRIPLE>` command to
 //! install rustc targets.
 //!
 //! [`Cfg`]: struct.Cfg.html
@@ -361,15 +361,15 @@ impl Default for CargoTarget {
     }
 }
 
-/// A builder type for the `cargo rustc -- --print cfg` command.
+/// A builder type for the `cargo rustc --lib -- --print cfg` command.
 ///
-/// For reference, the default command signature:
+/// For reference, the default command signature is:
 ///
 /// ```text
 /// cargo rustc --lib -- --print cfg
 /// ```
 ///
-/// and the more generic command signature represented by this type:
+/// and the more generic command signature represented by this type is:
 ///
 /// ```text
 /// cargo <TOOLCHAIN> rustc <CARGO_ARGS> <CARGO_TARGET> <RUSTC_TARGET> -- <RUSTC_ARGS> --print cfg

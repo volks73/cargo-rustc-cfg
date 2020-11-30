@@ -235,11 +235,11 @@
 //!
 //! ```
 //! # extern crate cargo_rustc_cfg;
-//! # use cargo_rustc_cfg::{Cfg, Error};
+//! # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
 //! # fn main() -> std::result::Result<(), Error> {
 //! let cfg = CargoRustcPrintCfg::default()
 //!     .rustc_target("i686-pc-windows-msvc")
-//!     .execute()?
+//!     .execute()?;
 //! assert_eq!(cfg.target().arch(), "x86");
 //! assert_eq!(cfg.target().endian(), "little");
 //! assert_eq!(cfg.target().env(), Some("msvc"));
@@ -630,11 +630,11 @@ impl CargoRustcPrintCfg {
             cmd.arg("--target");
             cmd.arg(rustc_target);
         }
+        cmd.args(self.cargo_target.to_args());
         cmd.arg("--");
         if let Some(rustc_args) = &self.rustc_args {
             cmd.args(rustc_args);
         }
-        cmd.args(self.cargo_target.to_args());
         cmd.arg("--print");
         cmd.arg("cfg");
         let output = cmd.output()?;
@@ -748,7 +748,7 @@ impl Cfg {
     /// # extern crate cargo_rustc_cfg;
     /// # #[cfg(all(target_arch = "x86_64", target_os = "windows", target_env = "msvc", target_vendor = "pc"))]
     /// # mod x86_64_pc_windows_msvc {
-    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
     /// let cfg = CargoRustcPrintCfg::default().execute()?;
     /// # assert_eq!(cfg.target().arch(), "x86_64");
@@ -795,7 +795,7 @@ impl Cfg {
     ///
     /// ```
     /// # extern crate cargo_rustc_cfg;
-    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
     /// let cfg = CargoRustcPrintCfg::default().rustc_target("x86_64-pc-windows-msvc").execute()?;
     /// # assert_eq!(cfg.target().arch(), "x86_64");
@@ -1124,12 +1124,12 @@ impl Target {
     ///
     /// ```
     /// # extern crate cargo_rustc_cfg;
-    /// # use cargo_rustc_cfg::{Cfg, Error};
+    /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
-    /// let cfg = Cfg::with_args(
-    ///     &["--target", "x86_64-pc-windows-msvc"],
-    ///     &["-C", "target-feature=+crt-static"]
-    /// )?;
+    /// let cfg = CargoRustcPrintCfg::default()
+    ///     .rustc_target("x86_64-pc-windows-msvc")
+    ///     .rustc_args(&["-C", "target-feature=+crt-static"])
+    ///     .execute()?;
     /// assert!(cfg.target().features().contains(&"crt-static"));
     /// # Ok(())
     /// # }

@@ -14,18 +14,18 @@
 
 //! The goal of this library, a.k.a. crate, is to provide access to the compiler
 //! configuration at Cargo build time of a project for use with [third-party]
-//! [Cargo custom subcommands] by running the `cargo rustc --lib -- --print cfg`
+//! [Cargo custom subcommands] by running the `cargo rustc -- --print cfg`
 //! command and parsing its output. This library is _not_ recommended for [build
 //! scripts] as the compiler configuration information is available via [Cargo
 //! environment variables] that are passed to build scripts at run
 //! time.
 //!
 //! If the Rust compiler (rustc) target is `x86_64-pc-windows-msvc`, then the
-//! output from the `cargo rustc --lib -- --print cfg` command will look similar to
+//! output from the `cargo rustc -- --print cfg` command will look similar to
 //! this:
 //!
 //! ```powershell
-//! PS C:\Path\to\Rust\Project> cargo rustc --lib -- --print cfg
+//! PS C:\Path\to\Rust\Project> cargo rustc -- --print cfg
 //!   Compiling <PACKAGE> vX.X.X (<PACKAGE_PATH>)
 //! debug_assertions
 //! target_arch="x86_64"
@@ -56,7 +56,7 @@
 //! (unaltered) and can be obtained with the [`Cfg::extras`] method.
 //!
 //! The [`CargoRustcPrintCfg`] type can be used to customize the `cargo rustc
-//! --lib -- --print cfg` command.
+//! -- --print cfg` command.
 //!
 //! # Examples
 //!
@@ -289,6 +289,8 @@
 //! [Cargo environment variables]: https://doc.rust-lang.org/cargo/reference/environment-variables.html#environment-variables-cargo-sets-for-build-scripts
 //! [rustup]: https://rust-lang.github.io/rustup/
 
+use cargo_metadata::MetadataCommand;
+
 use std::env;
 use std::ffi::{OsStr, OsString};
 use std::path::PathBuf;
@@ -331,6 +333,33 @@ pub enum CargoTarget {
 }
 
 impl CargoTarget {
+    pub fn default() -> Result<Option<Self>, Error> {
+        Self::with_command(MetadataCommand::new().no_deps())
+    }
+
+    pub fn with_command(cmd: &MetadataCommand) -> Result<Option<Self>, Error> {
+        let packages = cmd.exec()?.packages;
+        if packages[0].targets.len() <= 1 {
+            return Ok(None);
+        }
+        if let Some(bin_target) = packages[0]
+            .targets
+            .iter()
+            .find(|t| t.kind.iter().find(|k| k.as_str() == "bin").is_some())
+        {
+            Ok(Some(Self::Binary(OsString::from(bin_target.name.clone()))))
+        } else {
+            Ok(Some(Self::Library))
+        }
+    }
+
+    pub fn with_manifest<P>(path: P) -> Result<Option<Self>, Error>
+    where
+        P: Into<PathBuf>,
+    {
+        Self::with_command(MetadataCommand::new().no_deps().manifest_path(path))
+    }
+
     /// Converts the Cargo target into the command line arguments for Cargo.
     pub fn to_args(&self) -> Vec<&OsStr> {
         match self {
@@ -355,18 +384,12 @@ impl CargoTarget {
     }
 }
 
-impl Default for CargoTarget {
-    fn default() -> Self {
-        Self::Library
-    }
-}
-
-/// A builder type for the `cargo rustc --lib -- --print cfg` command.
+/// A builder type for the `cargo rustc -- --print cfg` command.
 ///
 /// For reference, the default command signature is:
 ///
 /// ```text
-/// cargo rustc --lib -- --print cfg
+/// cargo rustc -- --print cfg
 /// ```
 ///
 /// and the more generic command signature represented by this type is:
@@ -389,7 +412,7 @@ impl Default for CargoTarget {
 #[derive(Clone, Debug, PartialEq)]
 pub struct CargoRustcPrintCfg {
     cargo_args: Option<Vec<OsString>>,
-    cargo_target: CargoTarget,
+    cargo_target: Option<CargoTarget>,
     cargo_toolchain: Option<OsString>,
     rustc_args: Option<Vec<OsString>>,
     rustc_target: Option<OsString>,
@@ -402,18 +425,18 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo rustc --lib -- --print cfg
+    /// cargo rustc -- --print cfg
     /// ```
     ///
-    /// and this method adds arguments between `rustc` and `--lib` to yield:
+    /// and this method adds arguments between `rustc` and `--` to yield:
     ///
     /// ```text
-    /// cargo rustc <CARGO_ARGS> --lib -- --print cfg
+    /// cargo rustc <CARGO_ARGS> -- --print cfg
     /// ```
     pub fn cargo_args<A, S>(&mut self, a: A) -> &mut Self
     where
         A: IntoIterator<Item = S>,
-        S: AsRef<OsStr>
+        S: AsRef<OsStr>,
     {
         self.cargo_args = Some(a.into_iter().map(|s| s.as_ref().into()).collect());
         self
@@ -429,14 +452,27 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo rustc --lib -- --print cfg
+    /// cargo rustc -- --print cfg
     /// ```
     ///
-    /// and this method replaces the `--lib` with `--bin <NAME>`, `--bench
-    /// <NAME>`, `--example <NAME>`, or `--test <NAME>`, respectively.
-    pub fn cargo_target(&mut self, t: CargoTarget) -> &mut Self
-    {
-        self.cargo_target = t;
+    /// and this method explicitly defines the Cargo target to use, for example
+    /// if a binary Cargo target should be used:
+    ///
+    /// ```text
+    /// cargo rustc --bin <NAME> -- --print cfg
+    /// ```
+    ///
+    /// where `<NAME>` is replaced with the name of the binary defined in the
+    /// package's manifest (Cargo.toml) with the `[[bin]]` section.
+    ///
+    /// The default Cargo target is determined automatically. If no target is
+    /// defined in the package's manifest, then both this crate and Cargo assume
+    /// a single library target. If only a single Cargo target is explicitly
+    /// defined in the package's manifest, i.e. either a `[lib]` or a single
+    /// `[[bin]]`, then this will be used for the Cargo target. If library and
+    /// binary targets are defined, then the first binary target is used.
+    pub fn cargo_target(&mut self, t: CargoTarget) -> &mut Self {
+        self.cargo_target = Some(t);
         self
     }
 
@@ -452,19 +488,19 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo rustc --lib -- --print cfg
+    /// cargo rustc -- --print cfg
     /// ```
     ///
     /// and this method would add `+<TOOLCHAIN>` between `cargo` and `rustc` to yield:
     ///
     /// ```text
-    /// cargo +<TOOLCHAIN> rustc --lib -- --print cfg
+    /// cargo +<TOOLCHAIN> rustc -- --print cfg
     /// ```
     ///
     /// [`rustup`]: https://rust-lang.github.io/rustup/
     pub fn cargo_toolchain<T>(&mut self, t: T) -> &mut Self
     where
-        T: AsRef<OsStr>
+        T: AsRef<OsStr>,
     {
         self.cargo_toolchain = Some(t.as_ref().into());
         self
@@ -476,18 +512,18 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo rustc --lib -- --print cfg
+    /// cargo rustc -- --print cfg
     /// ```
     ///
     /// and this method adds arguments between `--` and `--print cfg` to yield:
     ///
     /// ```text
-    /// cargo rustc --lib -- <RUSTC_ARGS> --print cfg
+    /// cargo rustc -- <RUSTC_ARGS> --print cfg
     /// ```
     pub fn rustc_args<A, S>(&mut self, a: A) -> &mut Self
     where
         A: IntoIterator<Item = S>,
-        S: AsRef<OsStr>
+        S: AsRef<OsStr>,
     {
         self.rustc_args = Some(a.into_iter().map(|s| s.as_ref().into()).collect());
         self
@@ -505,13 +541,14 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo rustc --lib -- --print cfg
+    /// cargo rustc -- --print cfg
     /// ```
     ///
-    /// and this method would add `--target <RUSTC_TARGET>` between `--lib` and `--` to yield:
+    /// and this method would add `--target <RUSTC_TARGET>` between `rustc` and
+    /// `--` to yield:
     ///
     /// ```text
-    /// cargo rustc --lib --target <RUSTC_TARGET> -- --print cfg
+    /// cargo rustc --target <RUSTC_TARGET> -- --print cfg
     /// ```
     ///
     /// where `<RUSTC_TARGET>` is a target triple from the `rustc --print
@@ -519,7 +556,8 @@ impl CargoRustcPrintCfg {
     ///
     /// [`rustup`]: https://rust-lang.github.io/rustup/
     pub fn rustc_target<T>(&mut self, t: T) -> &mut Self
-        where T: AsRef<OsStr>
+    where
+        T: AsRef<OsStr>,
     {
         self.rustc_target = Some(t.as_ref().into());
         self
@@ -630,7 +668,13 @@ impl CargoRustcPrintCfg {
             cmd.arg("--target");
             cmd.arg(rustc_target);
         }
-        cmd.args(self.cargo_target.to_args());
+        if let Some(cargo_target) = &self.cargo_target {
+            cmd.args(cargo_target.to_args());
+        } else {
+            if let Some(cargo_target) = CargoTarget::default()? {
+                cmd.args(cargo_target.to_args());
+            }
+        }
         cmd.arg("--");
         if let Some(rustc_args) = &self.rustc_args {
             cmd.args(rustc_args);
@@ -723,7 +767,7 @@ impl Default for CargoRustcPrintCfg {
     fn default() -> Self {
         Self {
             cargo_args: None,
-            cargo_target: CargoTarget::default(),
+            cargo_target: None,
             cargo_toolchain: None,
             rustc_args: None,
             rustc_target: None,
@@ -731,7 +775,7 @@ impl Default for CargoRustcPrintCfg {
     }
 }
 
-/// A container for the parsed output from the `cargo rustc --lib -- --print
+/// A container for the parsed output from the `cargo rustc -- --print
 /// cfg` command.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Cfg {
@@ -830,7 +874,7 @@ impl Cfg {
     /// [`CargoRustcPrintCfg`]: struct.CargoRustcPrintCfg.html
     pub fn rustc_target<S>(t: S) -> Result<Self, Error>
     where
-        S: AsRef<OsStr>
+        S: AsRef<OsStr>,
     {
         CargoRustcPrintCfg::default().rustc_target(t).execute()
     }
@@ -1316,6 +1360,8 @@ pub enum Error {
     Generic(String),
     /// An I/O operation failed.
     Io(std::io::Error),
+    /// A failure in processing the metadata for the package.
+    Metadata(cargo_metadata::Error),
     /// An expected output from the `cargo rustc -- --print cfg` command is missing.
     MissingOutput(&'static str),
 }
@@ -1329,9 +1375,10 @@ impl std::fmt::Display for Error {
                 output,
                 String::from_utf8_lossy(&output.stderr)
             ),
-            Self::FromUtf8(err) => write!(f, "{}", err),
+            Self::FromUtf8(err) => err.fmt(f),
             Self::Generic(msg) => write!(f, "{}", msg),
-            Self::Io(err) => write!(f, "{}", err),
+            Self::Io(err) => err.fmt(f),
+            Self::Metadata(err) => err.fmt(f),
             Self::MissingOutput(key) => write!(f, "The '{}' is missing from the output", key),
         }
     }
@@ -1344,6 +1391,7 @@ impl std::error::Error for Error {
             Self::FromUtf8(err) => Some(err),
             Self::Generic(..) => None,
             Self::Io(err) => Some(err),
+            Self::Metadata(err) => Some(err),
             Self::MissingOutput(..) => None,
         }
     }
@@ -1364,6 +1412,12 @@ impl From<String> for Error {
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Self {
         Self::Io(e)
+    }
+}
+
+impl From<cargo_metadata::Error> for Error {
+    fn from(e: cargo_metadata::Error) -> Self {
+        Self::Metadata(e)
     }
 }
 

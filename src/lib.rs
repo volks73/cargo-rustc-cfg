@@ -427,6 +427,7 @@ pub struct CargoRustcPrintCfg {
     cargo_args: Option<Vec<OsString>>,
     cargo_target: Option<CargoTarget>,
     cargo_toolchain: Option<OsString>,
+    manifest_path: Option<PathBuf>,
     rustc_args: Option<Vec<OsString>>,
     rustc_target: Option<OsString>,
 }
@@ -516,6 +517,21 @@ impl CargoRustcPrintCfg {
         T: AsRef<OsStr>,
     {
         self.cargo_toolchain = Some(t.as_ref().into());
+        self
+    }
+
+    /// Sets the path to a package's manifest (Cargo.toml) to determine the
+    /// compiler configuration.
+    ///
+    /// The default assumes the current working directory (CWD) contains the
+    /// package's manifest, i.e. at the root directory of the Cargo project. Use
+    /// this method to override this default and determine the compiler
+    /// configuration for a Cargo-based project outside of the CWD.
+    pub fn manifest_path<P>(&mut self, p: P) -> &mut Self
+    where
+        P: Into<PathBuf>
+    {
+        self.manifest_path = Some(p.into());
         self
     }
 
@@ -674,6 +690,10 @@ impl CargoRustcPrintCfg {
             cmd.arg(arg);
         }
         cmd.arg(RUSTC);
+        if let Some(manifest_path) = &self.manifest_path {
+            cmd.arg("--manifest-path");
+            cmd.arg(manifest_path);
+        }
         if let Some(cargo_args) = &self.cargo_args {
             cmd.args(cargo_args);
         }
@@ -684,9 +704,16 @@ impl CargoRustcPrintCfg {
         if let Some(cargo_target) = &self.cargo_target {
             cmd.args(cargo_target.to_args());
         } else {
-            if let Some(cargo_target) = CargoTarget::default()? {
-                cmd.args(cargo_target.to_args());
+            if let Some(manifest_path) = &self.manifest_path {
+                if let Some(cargo_target) = CargoTarget::with_manifest(manifest_path)? {
+                    cmd.args(cargo_target.to_args());
+                }
+            } else {
+                if let Some(cargo_target) = CargoTarget::default()? {
+                    cmd.args(cargo_target.to_args());
+                }
             }
+
         }
         cmd.arg("--");
         if let Some(rustc_args) = &self.rustc_args {
@@ -782,6 +809,7 @@ impl Default for CargoRustcPrintCfg {
             cargo_args: None,
             cargo_target: None,
             cargo_toolchain: None,
+            manifest_path: None,
             rustc_args: None,
             rustc_target: None,
         }

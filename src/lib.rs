@@ -307,13 +307,18 @@ pub const RUSTC: &str = "rustc";
 
 /// The various types of Cargo targets.
 ///
-/// The default variant is [`Library`].
-///
 /// This should _not_ be confused with Rust compiler (rustc) targets, which are
 /// typically represented by a "triple" string. Cargo targets are defined and
 /// listed in a package's manifest (Cargo.toml).
 ///
-/// [`Library`]: enum.CargoTarget.html#variant.Library
+/// The default is to obtain a single Cargo target from a package's manifest
+/// (Cargo.toml) with the following order of precedence, where highest
+/// precedence is listed first.
+///
+/// 1. First defined Binary target
+/// 2. Defined Library target
+/// 3. Single Binary target
+/// 4. Library target if no targets are explicitly defined
 #[derive(Clone, Debug, PartialEq)]
 pub enum CargoTarget {
     /// A `--bench <NAME>` Cargo target as defined in the package's manifest
@@ -527,6 +532,21 @@ impl CargoRustcPrintCfg {
     /// package's manifest, i.e. at the root directory of the Cargo project. Use
     /// this method to override this default and determine the compiler
     /// configuration for a Cargo-based project outside of the CWD.
+    ///
+    /// For reference, the default command is:
+    ///
+    /// ```text
+    /// cargo rustc -- --print cfg
+    /// ```
+    ///
+    /// and this method adds the `--manifest-path` argument to yield:
+    ///
+    /// ```text
+    /// cargo rustc --manifest-path <PATH> -- --print cfg
+    /// ```
+    ///
+    /// where `<PATH>` is replaced with a path to a package's manifest
+    /// (Cargo.toml).
     pub fn manifest_path<P>(&mut self, p: P) -> &mut Self
     where
         P: Into<PathBuf>

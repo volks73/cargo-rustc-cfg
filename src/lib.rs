@@ -333,10 +333,18 @@ pub enum CargoTarget {
 }
 
 impl CargoTarget {
+    /// Determines the Cargo target by looking for a package manifest
+    /// (Cargo.toml) in the ancestors of the current directory.
     pub fn default() -> Result<Option<Self>, Error> {
         Self::with_command(MetadataCommand::new().no_deps())
     }
 
+    /// Determines the Cargo target using a `cargo metadata` command.
+    ///
+    /// Use this method to determine the Cargo target from a pre-configured
+    /// [`MetadataCommand`].
+    ///
+    /// [`MetadataCommand`]: https://docs.rs/cargo_metadata/0.12.1/cargo_metadata/struct.MetadataCommand.html
     pub fn with_command(cmd: &MetadataCommand) -> Result<Option<Self>, Error> {
         let packages = cmd.exec()?.packages;
         if packages[0].targets.len() <= 1 {
@@ -353,6 +361,11 @@ impl CargoTarget {
         }
     }
 
+    /// Determines the Cargo target for a specific package's manifest
+    /// (Cargo.toml).
+    ///
+    /// Use this method when the manifest is not in the current working
+    /// directory (cwd) and working externally from a Cargo project.
     pub fn with_manifest<P>(path: P) -> Result<Option<Self>, Error>
     where
         P: Into<PathBuf>,

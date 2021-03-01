@@ -80,13 +80,15 @@
 //! # use cargo_rustc_cfg::{self, Error};
 //! # fn main() -> std::result::Result<(), Error> {
 //! let host = cargo_rustc_cfg::host()?;
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_arch")).and_then(|c| c.value()), Some("x86_64"));
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_endian")).and_then(|c| c.value()), Some("little"));
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_env")).and_then(|c| c.value()), Some("msvc"));
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_family")).and_then(|c| c.value()), Some("windows"));
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_os")).and_then(|c| c.value()), Some("windows"));
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_pointer_width")).and_then(|c| c.value()), Some("64"));
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_vendor")).and_then(|c| c.value()), Some("pc"));
+//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
+//! assert_eq!(host.get("target_arch"), Some("x86_64"));
+//! assert_eq!(host.get("target_endian"), Some("little"));
+//! assert_eq!(host.get("target_env"), Some("msvc"));
+//! assert_eq!(host.get("target_family"), Some("windows"));
+//! assert_eq!(host.get("target_os"), Some("windows"));
+//! assert_eq!(host.get("target_pointer_width"), Some("64"));
+//! assert_eq!(host.get("target_vendor"), Some("pc"));
+//! assert_eq!(host.get("windows"), Some("windows"));
 //! # Ok(())
 //! # }
 //! # }
@@ -248,13 +250,15 @@
 //! # use cargo_rustc_cfg::Error;
 //! # fn main() -> std::result::Result<(), Error> {
 //! let target = cargo_rustc_cfg::target("i686-pc-windows-msvc")?;
-//! assert_eq!(target.iter().find(|c| c.key() == Some("target_arch")).and_then(|c| c.value()), Some("x86"));
-//! assert_eq!(target.iter().find(|c| c.key() == Some("target_endian")).and_then(|c| c.value()), Some("little"));
-//! assert_eq!(target.iter().find(|c| c.key() == Some("target_env")).and_then(|c| c.value()), Some("msvc"));
-//! assert_eq!(target.iter().find(|c| c.key() == Some("target_family")).and_then(|c| c.value()), Some("windows"));
-//! assert_eq!(target.iter().find(|c| c.key() == Some("target_os")).and_then(|c| c.value()), Some("windows"));
-//! assert_eq!(target.iter().find(|c| c.key() == Some("target_pointer_width")).and_then(|c| c.value()), Some("64"));
-//! assert_eq!(target.iter().find(|c| c.key() == Some("target_vendor")).and_then(|c| c.value()), Some("pc"));
+//! assert_eq!(target.get("debug_assertions"), Some("debug_assertions"));
+//! assert_eq!(target.get("target_arch"), Some("x86"));
+//! assert_eq!(target.get("target_endian"), Some("little"));
+//! assert_eq!(target.get("target_env"), Some("msvc"));
+//! assert_eq!(target.get("target_family"), Some("windows"));
+//! assert_eq!(target.get("target_os"), Some("windows"));
+//! assert_eq!(target.get("target_pointer_width"), Some("64"));
+//! assert_eq!(target.get("target_vendor"), Some("pc"));
+//! assert_eq!(target.get("windows"), Some("windows"));
 //! # Ok(())
 //! # }
 //! ```
@@ -564,6 +568,7 @@ impl CargoRustcPrintCfg {
     /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
     /// let host = CargoRustcPrintCfg::default().execute()?.pop().expect("Host compiler configuration");
+    /// assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
     /// assert_eq!(host.get("target_arch"), Some("x86_64"));
     /// assert_eq!(host.get("target_endian"), Some("little"));
     /// assert_eq!(host.get("target_env"), Some("msvc"));
@@ -571,6 +576,7 @@ impl CargoRustcPrintCfg {
     /// assert_eq!(host.get("target_os"), Some("windows"));
     /// assert_eq!(host.get("target_pointer_width"), Some("64"));
     /// assert_eq!(host.get("target_vendor"), Some("pc"));
+    /// assert_eq!(host.get("windows"), Some("windows"));
     /// # Ok(())
     /// # }
     /// # }
@@ -584,14 +590,16 @@ impl CargoRustcPrintCfg {
     /// # mod x86_64_unknown_linux_gnu {
     /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
-    /// let cfg = CargoRustcPrintCfg::default().execute()?;
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_arch")).and_then(|c| c.value()), Some("x86_64"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_endian")).and_then(|c| c.value()), Some("little"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_env")).and_then(|c| c.value()), Some("gnu"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_family")).and_then(|c| c.value()), Some("unix"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_os")).and_then(|c| c.value()), Some("linux"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_pointer_width")).and_then(|c| c.value()), Some("64"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_vendor")).and_then(|c| c.value()), Some("unknown"));
+    /// let host = CargoRustcPrintCfg::default().execute()?.pop().expect("Host compiler configuration");
+    /// assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
+    /// assert_eq!(host.get("target_arch"), Some("x86_64"));
+    /// assert_eq!(host.get("target_endian"), Some("little"));
+    /// assert_eq!(host.get("target_env"), Some("gnu"));
+    /// assert_eq!(host.get("target_family"), Some("unix"));
+    /// assert_eq!(host.get("target_os"), Some("linux"));
+    /// assert_eq!(host.get("target_pointer_width"), Some("64"));
+    /// assert_eq!(host.get("target_vendor"), Some("unknown"));
+    /// assert_eq!(host.get("unix"), Some("unix"));
     /// # Ok(())
     /// # }
     /// # }
@@ -605,14 +613,16 @@ impl CargoRustcPrintCfg {
     /// # mod x86_64_apple_darwin {
     /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
-    /// let cfg = CargoRustcPrintCfg::default().execute()?;
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_arch")).and_then(|c| c.value()), Some("x86_64"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_endian")).and_then(|c| c.value()), Some("little"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_env")).and_then(|c| c.value()), Some(""));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_family")).and_then(|c| c.value()), Some("unix"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_os")).and_then(|c| c.value()), Some("macos"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_pointer_width")).and_then(|c| c.value()), Some("64"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_vendor")).and_then(|c| c.value()), Some("apple"));
+    /// let host = CargoRustcPrintCfg::default().execute()?.pop().expect("Host compiler configuration");
+    /// assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
+    /// assert_eq!(host.get("target_arch"), Some("x86_64"));
+    /// assert_eq!(host.get("target_endian"), Some("little"));
+    /// assert_eq!(host.get("target_env"), Some(""));
+    /// assert_eq!(host.get("target_family"), Some("unix"));
+    /// assert_eq!(host.get("target_os"), Some("macos"));
+    /// assert_eq!(host.get("target_pointer_width"), Some("64"));
+    /// assert_eq!(host.get("target_vendor"), Some("apple"));
+    /// assert_eq!(host.get("unix"), Some("unix"));
     /// # Ok(())
     /// # }
     /// # }

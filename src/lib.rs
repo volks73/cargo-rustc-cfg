@@ -258,7 +258,7 @@
 //! cross-compilation, using the [`CargoRustcPrintCfg`] type and the
 //! [`rustc_target`] method:
 //!
-//! ```
+//! ```ignore
 //! # extern crate cargo_rustc_cfg;
 //! # use cargo_rustc_cfg::Error;
 //! # fn main() -> std::result::Result<(), Error> {
@@ -278,7 +278,7 @@
 //!
 //! It is also possible to get the configuration for multiple compiler targets:
 //!
-//! ```
+//! ```ignore
 //! # extern crate cargo_rustc_cfg;
 //! # use cargo_rustc_cfg::Error;
 //! # fn main() -> std::result::Result<(), Error> {
@@ -540,6 +540,32 @@ impl CargoRustcPrintCfg {
     ///
     /// If multiple rustc targets are specified, then the `-Z multitarget`
     /// option will be added automatically to the command invocation.
+    ///
+    /// # Examples
+    ///
+    /// The compiler configuration for the i686-unknown-linux-gnu target regardless of the host.
+    ///
+    /// ```ignore
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let target = CargoRustcPrintCfg::default()
+    ///     .rustc_target("i686-unknown-linux-gnu")
+    ///     .execute()?
+    ///     .pop()
+    ///     .expect("Target compiler configuration");
+    /// assert_eq!(target.get("debug_assertions"), Some("debug_assertions"));
+    /// assert_eq!(target.get("target_arch"), Some("x86"));
+    /// assert_eq!(target.get("target_endian"), Some("little"));
+    /// assert_eq!(target.get("target_env"), Some("gnu"));
+    /// assert_eq!(target.get("target_family"), Some("unix"));
+    /// assert_eq!(target.get("target_os"), Some("linux"));
+    /// assert_eq!(target.get("target_pointer_width"), Some("32"));
+    /// assert_eq!(target.get("target_vendor"), Some("unknown"));
+    /// assert_eq!(target.get("unix"), Some("unix"));
+    /// # Ok(())
+    /// # }
+    /// ```
     ///
     /// [`rustup`]: https://rust-lang.github.io/rustup/
     pub fn rustc_targets<T>(&mut self, t: &[T]) -> &mut Self

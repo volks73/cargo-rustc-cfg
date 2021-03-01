@@ -670,13 +670,25 @@ impl FromStr for TargetRustcCfg {
     }
 }
 
+/// A compiler (rustc) configuration statement, or line, from the output of the
+/// `cargo rustc --print cfg`.
+///
+/// A compiler configuration is either a `Name` configuration, like "unix" or
+/// "debug_assertions", or a `KeyPair` configuration, like `target_os="windows"`.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Cfg {
+    /// A compiler configuration like `unix`, `windows`, `debug_assertions`, etc.
     Name(String),
+    /// A compiler configuration with a key and value separated by the equal
+    /// sign , `=`, like `target_arch=x86_64`, etc.
     KeyPair(String, String),
 }
 
 impl Cfg {
+    /// Gets the name configuration.
+    ///
+    /// This will return `None` if the configuration is not a name
+    /// configuration.
     pub fn name(&self) -> Option<&str> {
         match self {
             Cfg::Name(n) => Some(n),
@@ -684,6 +696,10 @@ impl Cfg {
         }
     }
 
+    /// Gets the key-value pair configuration.
+    ///
+    /// This will return `None` if the configuration is not a key-value pair
+    /// configuration.
     pub fn key_pair(&self) -> Option<(&str, &str)> {
         match self {
             Cfg::Name(..) => None,
@@ -691,6 +707,10 @@ impl Cfg {
         }
     }
 
+    /// Gets the key part of the key-value pair configuration.
+    ///
+    /// This will return `None` if the configuration is not a key-value pair
+    /// configuration.
     pub fn key(&self) -> Option<&str> {
         match self {
             Cfg::Name(..) => None,
@@ -698,6 +718,10 @@ impl Cfg {
         }
     }
 
+    /// Gets the value part of the key-value pair configuration.
+    ///
+    /// This will return `None` if the configuration is not a key-value pair
+    /// configuration.
     pub fn value(&self) -> Option<&str> {
         match self {
             Cfg::Name(..) => None,
@@ -705,6 +729,10 @@ impl Cfg {
         }
     }
 
+    /// Checks if this is a name configuration.
+    ///
+    /// Returns `true` if this is a name configuration; otherwise, this returns
+    /// `false`.
     pub fn is_name(&self) -> bool {
          match self {
             Cfg::Name(..) => true,
@@ -712,6 +740,10 @@ impl Cfg {
         }
     }
 
+    /// Checks if this is a key-value pair configuration.
+    ///
+    /// Returns `true` if this is a key-value pair configuration; otherwise,
+    /// this returns `false`.
     pub fn is_key_pair(&self) -> bool {
          match self {
             Cfg::Name(..) => false,
@@ -719,6 +751,10 @@ impl Cfg {
         }
     }
 
+    /// Gets the name configuration.
+    ///
+    /// This will return `None` if this is not a name configuration. Regardless,
+    /// it will consume this configuration.
     pub fn into_name(self) -> Option<String> {
         match self {
             Cfg::Name(n) => Some(n),
@@ -726,6 +762,10 @@ impl Cfg {
         }
     }
 
+    /// Gets the key-value pair configuration.
+    ///
+    /// This will return `None` if this is not a key-value pair configuration.
+    /// Regardless, it will consume this configuration.
     pub fn into_key_pair(self) -> Option<(String, String)> {
         match self {
             Cfg::Name(..) => None,

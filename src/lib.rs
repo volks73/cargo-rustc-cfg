@@ -564,13 +564,13 @@ impl CargoRustcPrintCfg {
     /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
     /// let host = CargoRustcPrintCfg::default().execute()?.pop().expect("Host compiler configuration");
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_arch")).and_then(|c| c.value()), Some("x86_64"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_endian")).and_then(|c| c.value()), Some("little"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_env")).and_then(|c| c.value()), Some("msvc"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_family")).and_then(|c| c.value()), Some("windows"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_os")).and_then(|c| c.value()), Some("windows"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_pointer_width")).and_then(|c| c.value()), Some("64"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_vendor")).and_then(|c| c.value()), Some("pc"));
+    /// assert_eq!(host.get("target_arch"), Some("x86_64"));
+    /// assert_eq!(host.get("target_endian"), Some("little"));
+    /// assert_eq!(host.get("target_env"), Some("msvc"));
+    /// assert_eq!(host.get("target_family"), Some("windows"));
+    /// assert_eq!(host.get("target_os"), Some("windows"));
+    /// assert_eq!(host.get("target_pointer_width"), Some("64"));
+    /// assert_eq!(host.get("target_vendor"), Some("pc"));
     /// # Ok(())
     /// # }
     /// # }
@@ -691,6 +691,28 @@ impl TargetRustcCfg {
     /// (rustc) target.
     pub fn iter(&self) -> Iter<Cfg> {
         self.0.iter()
+    }
+
+    /// Returns a reference to the compiler configuration value with the corresponding identifier (ID).
+    ///
+    /// In the case of a name compiler configuration, the name is the value. If
+    /// the compiler configuration is a key-value pair, the value will be
+    /// returned if the key matches the ID.
+    pub fn get(&self, id: &str) -> Option<&str> {
+        self.0.iter().find_map(|c| {
+            match c {
+                Cfg::Name(n) => if n == id {
+                    Some(n.as_ref())
+                } else {
+                    None
+                },
+                Cfg::KeyPair(k, v) => if k == id {
+                    Some(v.as_ref())
+                } else {
+                    None
+                }
+            }
+        })
     }
 }
 

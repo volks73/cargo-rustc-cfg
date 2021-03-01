@@ -1,6 +1,6 @@
-# cargo-rustc-cfg: A Rust library (crate) for running the `cargo rustc -- --print cfg` command and parsing the output
+# cargo-rustc-cfg: A Rust library (crate) for running the `cargo rustc --print cfg` command and parsing the output
 
-A Rust library (crate) that runs the `cargo rustc -- --print cfg` command and parses the output. This is inspired by the [rustc-cfg] crate, which runs the `rustc --print cfg` command and parses the output, but it does not take into account any flags or configurations passed from [Cargo] to the [Rust compiler (rustc)] when building a project using Cargo. For example, if the `RUSTFLAGS` environment variable is used to add a target feature, i.e. `RUSTFLAGS="-C target-feature=+crt-static`, then the `rustc --print cfg` command will not list the added target feature in its output because the `RUSTFLAGS` environment variable is managed by Cargo. However, the `cargo rustc -- --print cfg` will list the added target feature in its output. This crate is useful for developing [third-party] [Cargo custom subcommands] that need compiler configuration information. This crate is _not_ recommeded for [build scripts].
+A Rust library (crate) that runs the `cargo rustc --print cfg` command and parses the output. This is inspired by the [rustc-cfg] crate, which runs the `rustc --print cfg` command and parses the output, but it does not take into account any flags or configurations passed from [Cargo] to the [Rust compiler (rustc)] when building a project using Cargo. For example, if the `RUSTFLAGS` environment variable is used to add a target feature, i.e. `RUSTFLAGS="-C target-feature=+crt-static`, then the `rustc --print cfg` command will not list the added target feature in its output because the `RUSTFLAGS` environment variable is managed by Cargo. However, the `cargo rustc --print cfg` will list the added target feature in its output. This crate is useful for developing [third-party] [Cargo custom subcommands] that need compiler configuration information. This crate is _not_ recommeded for [build scripts].
 
 [![Crates.io](https://img.shields.io/crates/v/cargo-rustc-cfg.svg)](https://crates.io/crates/cargo-rustc-cfg)
 [![GitHub release](https://img.shields.io/github/release/volks73/cargo-rustc-cfg.svg)](https://github.com/volks73/cargo-rustc-cfg/releases)
@@ -16,11 +16,15 @@ A Rust library (crate) that runs the `cargo rustc -- --print cfg` command and pa
 
 ## Quick Start
 
-```rust
-use cargo_rustc_cfg::Cfg;
+**Note**, the nighlty toolchain must be installed. It is not needed for building
+the crate/library, but it uses Cargo features that are currently only available
+in the nightly toolchain.
 
-let cfg = Cfg::host()?;
-println("{:?}", cfg);
+```rust
+use cargo_rustc_cfg;
+
+let host = cargo_rustc_cfg::host()?;
+println("{:?}", host);
 ```
 
 ## Installation
@@ -41,7 +45,7 @@ extern crate cargo_rustc_cfg;
 
 ## Tests
 
-Tests are running using the `cargo test` command. Currently, only [documentation tests] are implemented because for a relatively simple, small library these provide enough coverage.
+Tests are run using the `cargo test` command. Currently, only [documentation tests] are implemented because for a relatively simple, small library these provide enough coverage.
 
 [Documentation tests]: https://doc.rust-lang.org/rustdoc/documentation-tests.html
 

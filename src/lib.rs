@@ -80,13 +80,13 @@
 //! # use cargo_rustc_cfg::{self, Error};
 //! # fn main() -> std::result::Result<(), Error> {
 //! let host = cargo_rustc_cfg::host()?;
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_arch")), Some("x86_64"));
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_endian")), Some("little"));
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_env")), Some("msvc"));
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_family")), Some("windows"));
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_os")), Some("windows"));
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_pointer_width")), Some("64"));
-//! assert_eq!(host.iter().find(|c| c.key() == Some("target_vendor")), Some("pc"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_arch")).and_then(|c| c.value()), Some("x86_64"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_endian")).and_then(|c| c.value()), Some("little"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_env")).and_then(|c| c.value()), Some("msvc"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_family")).and_then(|c| c.value()), Some("windows"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_os")).and_then(|c| c.value()), Some("windows"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_pointer_width")).and_then(|c| c.value()), Some("64"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_vendor")).and_then(|c| c.value()), Some("pc"));
 //! # Ok(())
 //! # }
 //! # }
@@ -245,38 +245,27 @@
 //!
 //! ```
 //! # extern crate cargo_rustc_cfg;
-//! # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
+//! # use cargo_rustc_cfg::Error;
 //! # fn main() -> std::result::Result<(), Error> {
-//! let cfg = CargoRustcPrintCfg::default()
-//!     .rustc_target("i686-pc-windows-msvc")
-//!     .execute()?;
-//! assert_eq!(cfg.target().arch(), "x86");
-//! assert_eq!(cfg.target().endian(), "little");
-//! assert_eq!(cfg.target().env(), Some("msvc"));
-//! assert_eq!(cfg.target().family(), Some("windows"));
-//! assert_eq!(cfg.target().os(), "windows");
-//! assert_eq!(cfg.target().pointer_width(), "32");
-//! assert_eq!(cfg.target().vendor(), Some("pc"));
+//! let target = cargo_rustc_cfg::target("i686-pc-windows-msvc")?;
+//! assert_eq!(target.iter().find(|c| c.key() == Some("target_arch")).and_then(|c| c.value()), Some("x86"));
+//! assert_eq!(target.iter().find(|c| c.key() == Some("target_endian")).and_then(|c| c.value()), Some("little"));
+//! assert_eq!(target.iter().find(|c| c.key() == Some("target_env")).and_then(|c| c.value()), Some("msvc"));
+//! assert_eq!(target.iter().find(|c| c.key() == Some("target_family")).and_then(|c| c.value()), Some("windows"));
+//! assert_eq!(target.iter().find(|c| c.key() == Some("target_os")).and_then(|c| c.value()), Some("windows"));
+//! assert_eq!(target.iter().find(|c| c.key() == Some("target_pointer_width")).and_then(|c| c.value()), Some("64"));
+//! assert_eq!(target.iter().find(|c| c.key() == Some("target_vendor")).and_then(|c| c.value()), Some("pc"));
 //! # Ok(())
 //! # }
 //! ```
 //!
-//! The above use-case is relatively common, but it is tedious to
-//! routinely use the [`CargoRustcPrintCfg`] builder. The [`Cfg::rustc_target`]
-//! method is available as a shorthand for the previous example:
+//! It is also possible to get the configuration for multiple compiler targets:
 //!
 //! ```
 //! # extern crate cargo_rustc_cfg;
-//! # use cargo_rustc_cfg::{Cfg, Error};
+//! # use cargo_rustc_cfg::Error;
 //! # fn main() -> std::result::Result<(), Error> {
-//! let cfg = Cfg::rustc_target("i686-pc-windows-msvc")?;
-//! assert_eq!(cfg.target().arch(), "x86");
-//! assert_eq!(cfg.target().endian(), "little");
-//! assert_eq!(cfg.target().env(), Some("msvc"));
-//! assert_eq!(cfg.target().family(), Some("windows"));
-//! assert_eq!(cfg.target().os(), "windows");
-//! assert_eq!(cfg.target().pointer_width(), "32");
-//! assert_eq!(cfg.target().vendor(), Some("pc"));
+//! let _targets = cargo_rustc_cfg::targets(&["i686-pc-windows-msvc", "i686-pc-windows-gnu"])?;
 //! # Ok(())
 //! # }
 //! ```
@@ -574,14 +563,14 @@ impl CargoRustcPrintCfg {
     /// # mod x86_64_pc_windows_msvc {
     /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
-    /// let host = CargoRustcPrintCfg::default().execute()?[0];
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_arch")), Some("x86_64"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_endian")), Some("little"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_env")), Some("msvc"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_family")), Some("windows"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_os")), Some("windows"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_pointer_width")), Some("64"));
-    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_vendor")), Some("pc"));
+    /// let host = CargoRustcPrintCfg::default().execute()?.pop().expect("Host compiler configuration");
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_arch")).and_then(|c| c.value()), Some("x86_64"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_endian")).and_then(|c| c.value()), Some("little"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_env")).and_then(|c| c.value()), Some("msvc"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_family")).and_then(|c| c.value()), Some("windows"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_os")).and_then(|c| c.value()), Some("windows"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_pointer_width")).and_then(|c| c.value()), Some("64"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_vendor")).and_then(|c| c.value()), Some("pc"));
     /// # Ok(())
     /// # }
     /// # }

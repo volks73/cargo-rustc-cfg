@@ -585,13 +585,13 @@ impl CargoRustcPrintCfg {
     /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
     /// let cfg = CargoRustcPrintCfg::default().execute()?;
-    /// assert_eq!(cfg.target().arch(), "x86_64");
-    /// assert_eq!(cfg.target().endian(), "little");
-    /// assert_eq!(cfg.target().env(), None);
-    /// assert_eq!(cfg.target().family(), Some("unix"));
-    /// assert_eq!(cfg.target().os(), "os");
-    /// assert_eq!(cfg.target().pointer_width(), "64");
-    /// assert_eq!(cfg.target().vendor(), Some("unknown"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_arch")).and_then(|c| c.value()), Some("x86_64"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_endian")).and_then(|c| c.value()), Some("little"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_env")).and_then(|c| c.value()), Some("gnu"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_family")).and_then(|c| c.value()), Some("unix"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_os")).and_then(|c| c.value()), Some("linux"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_pointer_width")).and_then(|c| c.value()), Some("64"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_vendor")).and_then(|c| c.value()), Some("unknown"));
     /// # Ok(())
     /// # }
     /// # }
@@ -606,13 +606,13 @@ impl CargoRustcPrintCfg {
     /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
     /// let cfg = CargoRustcPrintCfg::default().execute()?;
-    /// assert_eq!(cfg.target().arch(), "x86_64");
-    /// assert_eq!(cfg.target().endian(), "little");
-    /// assert_eq!(cfg.target().env(), None);
-    /// assert_eq!(cfg.target().family(), Some("unix"));
-    /// assert_eq!(cfg.target().os(), "os");
-    /// assert_eq!(cfg.target().pointer_width(), "64");
-    /// assert_eq!(cfg.target().vendor(), Some("apple"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_arch")).and_then(|c| c.value()), Some("x86_64"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_endian")).and_then(|c| c.value()), Some("little"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_env")).and_then(|c| c.value()), Some(""));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_family")).and_then(|c| c.value()), Some("unix"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_os")).and_then(|c| c.value()), Some("macos"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_pointer_width")).and_then(|c| c.value()), Some("64"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_vendor")).and_then(|c| c.value()), Some("apple"));
     /// # Ok(())
     /// # }
     /// # }

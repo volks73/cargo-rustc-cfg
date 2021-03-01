@@ -283,6 +283,7 @@ use std::ffi::{OsStr, OsString};
 use std::fmt;
 use std::path::PathBuf;
 use std::process::{Command, Output};
+use std::slice::Iter;
 
 /// The command line name of the Cargo application.
 pub const CARGO: &str = "cargo";
@@ -298,24 +299,22 @@ pub const RUSTC: &str = "rustc";
 /// For reference, the default command signature is:
 ///
 /// ```text
-/// cargo +nightly rustc -Z unstable-option -Z multitarget --print cfg
+/// cargo +nightly rustc -Z unstable-option --print cfg
 /// ```
 ///
 /// and the more generic command signature represented by this type is:
 ///
 /// ```text
-/// cargo <TOOLCHAIN> rustc <CARGO_ARGS> <CARGO_TARGET> <RUSTC_TARGET> --print cfg -- <RUSTC_ARGS>
+/// cargo +<TOOLCHAIN> rustc <CARGO_ARGS> <RUSTC_TARGET> --print cfg -- <RUSTC_ARGS>
 /// ```
 ///
 /// where `<TOOLCHAIN>` is replaced with the [`cargo_toolchain`] value, the
 /// `<CARGO_ARGS>` is replaced with the [`cargo_args`] value, the
-/// `<CARGO_TARGET>` is replaced with the [`cargo_target`] value, the
 /// `<RUSTC_TARGET>` is replaced with the [`rustc_target`] value, and the
 /// `<RUSTC_ARGS>` is replaced with the [`rustc_args`] value.
 ///
 /// [`cargo_toolchain`]: #method.cargo_toolchain
 /// [`cargo_args`]: #method.cargo_args
-/// [`cargo_target`]: #method.cargo_target
 /// [`rustc_target`]: #method.rustc_target
 /// [`rustc_args`]: #method.rustc_args
 #[derive(Clone, Debug, PartialEq)]
@@ -334,13 +333,13 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-options -Z multitarget --print cfg
+    /// cargo +nightly rustc -Z unstable-options --print cfg
     /// ```
     ///
     /// and this method adds arguments between `rustc` and `--print cfg` to yield:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-options -Z multitarget <CARGO_ARGS> --print cfg
+    /// cargo +nightly rustc -Z unstable-options <CARGO_ARGS> --print cfg
     /// ```
     pub fn cargo_args<A, S>(&mut self, a: A) -> &mut Self
     where
@@ -363,13 +362,14 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option -Z multitarget --print cfg
+    /// cargo +nightly rustc -Z unstable-option --print cfg
     /// ```
     ///
-    /// and this method would add `+<TOOLCHAIN>` between `cargo` and `rustc` to yield:
+    /// and this method would replace `+nightly` with `+<TOOLCHAIN>` between
+    /// `cargo` and `rustc` to yield:
     ///
     /// ```text
-    /// cargo +<TOOLCHAIN> rustc -Z unstable-option -Z multitarget --print cfg
+    /// cargo +<TOOLCHAIN> rustc -Z unstable-option --print cfg
     /// ```
     ///
     /// [`rustup`]: https://rust-lang.github.io/rustup/
@@ -392,13 +392,13 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option -Z multitarget --print cfg
+    /// cargo +nightly rustc -Z unstable-option --print cfg
     /// ```
     ///
     /// and this method adds the `--manifest-path` argument to yield:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option -Z multitarget --manifest-path <PATH> --print cfg
+    /// cargo +nightly rustc -Z unstable-option --manifest-path <PATH> --print cfg
     /// ```
     ///
     /// where `<PATH>` is replaced with a path to a package's manifest
@@ -416,13 +416,13 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option -Z multitarget --print cfg
+    /// cargo +nightly rustc -Z unstable-option --print cfg
     /// ```
     ///
     /// and this method adds arguments after `--` to yield:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option -Z multitarget --print cfg -- <RUSTC_ARGS>
+    /// cargo +nightly rustc -Z unstable-option --print cfg -- <RUSTC_ARGS>
     /// ```
     pub fn rustc_args<A, S>(&mut self, a: A) -> &mut Self
     where
@@ -435,27 +435,26 @@ impl CargoRustcPrintCfg {
 
     /// Specify a Rust compiler (rustc) target via a target triple.
     ///
-    /// The rustc target must be installed on the host system before specifying
-    /// it with this method. It is recommended to install and manage targets for
-    /// various toolchains using the [`rustup`] application.
-    ///
     /// The `--target` argument is prepended automatically. Please do not include it
     /// as part of the target triple value.
     ///
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option -Z multitarget --print cfg
+    /// cargo +nightly rustc -Z unstable-option --print cfg
     /// ```
     ///
     /// and this method would add `--target <RUSTC_TARGET>` to yield:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option -Z multitarget --target <RUSTC_TARGET> --print cfg
+    /// cargo +nightly rustc -Z unstable-option --target <RUSTC_TARGET> --print cfg
     /// ```
     ///
     /// where `<RUSTC_TARGET>` is a target triple from the `rustc --print
     /// target-list` output.
+    ///
+    /// If more than one rustc target is specified, the `-Z multitarget` option
+    /// will automatically be added to the command invocation.
     ///
     /// [`rustup`]: https://rust-lang.github.io/rustup/
     pub fn rustc_target<T>(&mut self, t: T) -> &mut Self
@@ -466,11 +465,7 @@ impl CargoRustcPrintCfg {
         self
     }
 
-    /// Specify a Rust compiler (rustc) target via a target triple.
-    ///
-    /// The rustc target must be installed on the host system before specifying
-    /// it with this method. It is recommended to install and manage targets for
-    /// various toolchains using the [`rustup`] application.
+    /// Specify multiple Rust compiler (rustc) targets via target triples.
     ///
     /// The `--target` argument is prepended automatically. Please do not include it
     /// as part of the target triple value.
@@ -478,17 +473,20 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option -Z multitarget --print cfg
+    /// cargo +nightly rustc -Z unstable-option --print cfg
     /// ```
     ///
-    /// and this method would add `--target <RUSTC_TARGET>` to yield:
+    /// and this method would add multiple `--target <RUSTC_TARGET>` to yield:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option -Z multitarget --target <RUSTC_TARGET> --print cfg
+    /// cargo +nightly rustc -Z unstable-option -Z multitarget --target <RUSTC_TARGET_1> --target <RUSTC_TARGET_2> --print cfg
     /// ```
     ///
     /// where `<RUSTC_TARGET>` is a target triple from the `rustc --print
     /// target-list` output.
+    ///
+    /// If multiple rustc targets are specified, then the `-Z multitarget`
+    /// option will be added automatically to the command invocation.
     ///
     /// [`rustup`]: https://rust-lang.github.io/rustup/
     pub fn rustc_targets<T>(&mut self, t: &[T]) -> &mut Self
@@ -504,15 +502,15 @@ impl CargoRustcPrintCfg {
     /// For reference, the generic command signature:
     ///
     /// ```text
-    /// `cargo +<TOOLCHAIN> rustc -Z unstable-options -Z multitarget <CARGO_ARGS> <RUSTC_TARGETS> --print cfg -- <RUSTC_ARGS>`
+    /// `cargo +<TOOLCHAIN> rustc -Z unstable-options <CARGO_ARGS> <RUSTC_TARGETS> --print cfg -- <RUSTC_ARGS>`
     /// ```
     ///
-    /// where `<TOOLCHAIN>` is replaced
-    /// with the [`cargo_toolchain`] value, the `<CARGO_ARGS>` is replaced with
-    /// the [`cargo_args`] value, the `<RUSTC_TARGETS>` is appropriately
-    /// replaced with `--target <RUSTC_TARGET> for each specified target from
-    /// the [`rustc_targets`] or [`rustc_target`] methods, and the
-    /// `<RUSTC_ARGS>` is replaced with the [`rustc_args`] value.
+    /// where `<TOOLCHAIN>` is replaced with the [`cargo_toolchain`] value, the
+    /// `<CARGO_ARGS>` is replaced with the [`cargo_args`] value, the
+    /// `<RUSTC_TARGETS>` is appropriately replaced with `--target
+    /// <RUSTC_TARGET> for each specified target from the [`rustc_targets`] or
+    /// [`rustc_target`] methods, and the `<RUSTC_ARGS>` is replaced with the
+    /// [`rustc_args`] value.
     ///
     /// # Examples
     ///
@@ -524,8 +522,8 @@ impl CargoRustcPrintCfg {
     /// # mod x86_64_pc_windows_msvc {
     /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
-    /// let cfg = CargoRustcPrintCfg::default().execute()?;
-    /// assert_eq!(cfg.target().arch(), "x86_64");
+    /// let host = CargoRustcPrintCfg::default().execute()?[0];
+    /// assert_eq!(host, "x86_64");
     /// assert_eq!(cfg.target().endian(), "little");
     /// assert_eq!(cfg.target().env(), Some("msvc"));
     /// assert_eq!(cfg.target().family(), Some("windows"));
@@ -601,8 +599,10 @@ impl CargoRustcPrintCfg {
         cmd.arg(RUSTC);
         cmd.arg("-Z");
         cmd.arg("unstable-options");
-        cmd.arg("-Z");
-        cmd.arg("multitarget");
+        if self.rustc_targets.len() > 1 {
+            cmd.arg("-Z");
+            cmd.arg("multitarget");
+        }
         if let Some(manifest_path) = &self.manifest_path {
             cmd.arg("--manifest-path");
             cmd.arg(manifest_path);
@@ -638,25 +638,11 @@ impl Default for CargoRustcPrintCfg {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct TargetRustcCfg {
-    cfgs: Vec<Cfg>
-}
+pub struct TargetRustcCfg(Vec<Cfg>);
 
 impl TargetRustcCfg {
-    pub fn cfgs(&self) -> &[Cfg] {
-        &self.cfgs
-    }
-
-    pub fn name_cfgs(&self) -> Vec<&Cfg> {
-        self.cfgs.iter().filter(|c| c.is_name()).collect()
-    }
-
-    pub fn key_pair_cfgs(&self) -> Vec<&Cfg> {
-        self.cfgs.iter().filter(|c| c.is_key_pair()).collect()
-    }
-
-    pub fn into_cfgs(self) -> Vec<Cfg> {
-        self.cfgs
+    pub fn iter(&self) -> Iter<Cfg> {
+        self.0.iter()
     }
 }
 
@@ -664,9 +650,16 @@ impl FromStr for TargetRustcCfg {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self {
-            cfgs: s.lines().map(|line| line.parse::<Cfg>()).collect::<Result<Vec<Cfg>, Error>>()?
-        })
+        Ok(Self(s.lines().map(|line| line.parse::<Cfg>()).collect::<Result<Vec<Cfg>, Error>>()?))
+    }
+}
+
+impl IntoIterator for TargetRustcCfg {
+    type Item = Cfg;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 

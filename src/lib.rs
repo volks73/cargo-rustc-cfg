@@ -102,14 +102,16 @@
 //! # mod x86_64_pc_windows_gnu {
 //! # use cargo_rustc_cfg::{Cfg, Error};
 //! # fn main() -> std::result::Result<(), Error> {
-//! let cfg = Cfg::host()?;
-//! assert_eq!(cfg.target().arch(), "x86_64");
-//! assert_eq!(cfg.target().endian(), "little");
-//! assert_eq!(cfg.target().env(), Some("gnu"));
-//! assert_eq!(cfg.target().family(), Some("windows"));
-//! assert_eq!(cfg.target().os(), "windows");
-//! assert_eq!(cfg.target().pointer_width(), "64");
-//! assert_eq!(cfg.target().vendor(), Some("pc"));
+//! let host = cargo_rustc_cfg::host()?;
+//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
+//! assert_eq!(host.get("target_arch"), Some("x86_64"));
+//! assert_eq!(host.get("target_endian"), Some("little"));
+//! assert_eq!(host.get("target_env"), Some("gnu"));
+//! assert_eq!(host.get("target_family"), Some("windows"));
+//! assert_eq!(host.get("target_os"), Some("windows"));
+//! assert_eq!(host.get("target_pointer_width"), Some("64"));
+//! assert_eq!(host.get("target_vendor"), Some("pc"));
+//! assert_eq!(host.get("windows"), Some("windows"));
 //! # Ok(())
 //! # }
 //! # }
@@ -123,14 +125,16 @@
 //! # mod x86_64_unknown_linux_gnu {
 //! # use cargo_rustc_cfg::{Cfg, Error};
 //! # fn main() -> std::result::Result<(), Error> {
-//! let cfg = Cfg::host()?;
-//! assert_eq!(cfg.target().arch(), "x86_64");
-//! assert_eq!(cfg.target().endian(), "little");
-//! assert_eq!(cfg.target().env(), None);
-//! assert_eq!(cfg.target().family(), Some("unix"));
-//! assert_eq!(cfg.target().os(), "os");
-//! assert_eq!(cfg.target().pointer_width(), "64");
-//! assert_eq!(cfg.target().vendor(), Some("unknown"));
+//! let host = cargo_rustc_cfg::host()?;
+//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
+//! assert_eq!(host.get("target_arch"), Some("x86_64"));
+//! assert_eq!(host.get("target_endian"), Some("little"));
+//! assert_eq!(host.get("target_env"), Some("gnu"));
+//! assert_eq!(host.get("target_family"), Some("unix"));
+//! assert_eq!(host.get("target_os"), Some("linux"));
+//! assert_eq!(host.get("target_pointer_width"), Some("64"));
+//! assert_eq!(host.get("target_vendor"), Some("unknown"));
+//! assert_eq!(host.get("unix"), Some("unix"));
 //! # Ok(())
 //! # }
 //! # }
@@ -144,14 +148,16 @@
 //! # mod x86_64_apple_darwin {
 //! # use cargo_rustc_cfg::{Cfg, Error};
 //! # fn main() -> std::result::Result<(), Error> {
-//! let cfg = Cfg::host()?;
-//! assert_eq!(cfg.target().arch(), "x86_64");
-//! assert_eq!(cfg.target().endian(), "little");
-//! assert_eq!(cfg.target().env(), None);
-//! assert_eq!(cfg.target().family(), Some("unix"));
-//! assert_eq!(cfg.target().os(), "os");
-//! assert_eq!(cfg.target().pointer_width(), "64");
-//! assert_eq!(cfg.target().vendor(), Some("apple"));
+//! let host = cargo_rustc_cfg::host()?;
+//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
+//! assert_eq!(host.get("target_arch"), Some("x86_64"));
+//! assert_eq!(host.get("target_endian"), Some("little"));
+//! assert_eq!(host.get("target_env"), Some("apple"));
+//! assert_eq!(host.get("target_family"), Some("unix"));
+//! assert_eq!(host.get("target_os"), Some("macos"));
+//! assert_eq!(host.get("target_pointer_width"), Some("64"));
+//! assert_eq!(host.get("target_vendor"), Some("apple"));
+//! assert_eq!(host.get("unix"), Some("unix"));
 //! # Ok(())
 //! # }
 //! # }
@@ -165,14 +171,16 @@
 //! # mod i686_pc_windows_msvc {
 //! # use cargo_rustc_cfg::{Cfg, Error};
 //! # fn main() -> std::result::Result<(), Error> {
-//! let cfg = Cfg::host()?;
-//! assert_eq!(cfg.target().arch(), "x86");
-//! assert_eq!(cfg.target().endian(), "little");
-//! assert_eq!(cfg.target().env(), Some("msvc"));
-//! assert_eq!(cfg.target().family(), Some("windows"));
-//! assert_eq!(cfg.target().os(), "windows");
-//! assert_eq!(cfg.target().pointer_width(), "32");
-//! assert_eq!(cfg.target().vendor(), Some("pc"));
+//! let host = cargo_rustc_cfg::host()?;
+//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
+//! assert_eq!(host.get("target_arch"), Some("x86"));
+//! assert_eq!(host.get("target_endian"), Some("little"));
+//! assert_eq!(host.get("target_env"), Some("msvc"));
+//! assert_eq!(host.get("target_family"), Some("windows"));
+//! assert_eq!(host.get("target_os"), Some("windows"));
+//! assert_eq!(host.get("target_pointer_width"), Some("64"));
+//! assert_eq!(host.get("target_vendor"), Some("pc"));
+//! assert_eq!(host.get("windows"), Some("windows"));
 //! # Ok(())
 //! # }
 //! # }
@@ -186,14 +194,16 @@
 //! # mod i686_pc_windows_gnu {
 //! # use cargo_rustc_cfg::{Cfg, Error};
 //! # fn main() -> std::result::Result<(), Error> {
-//! let cfg = Cfg::host()?;
-//! assert_eq!(cfg.target().arch(), "x86_64");
-//! assert_eq!(cfg.target().endian(), "little");
-//! assert_eq!(cfg.target().env(), Some("gnu"));
-//! assert_eq!(cfg.target().family(), Some("windows"));
-//! assert_eq!(cfg.target().os(), "windows");
-//! assert_eq!(cfg.target().pointer_width(), "32");
-//! assert_eq!(cfg.target().vendor(), Some("pc"));
+//! let host = cargo_rustc_cfg::host()?;
+//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
+//! assert_eq!(host.get("target_arch"), Some("x86"));
+//! assert_eq!(host.get("target_endian"), Some("little"));
+//! assert_eq!(host.get("target_env"), Some("gnu"));
+//! assert_eq!(host.get("target_family"), Some("windows"));
+//! assert_eq!(host.get("target_os"), Some("windows"));
+//! assert_eq!(host.get("target_pointer_width"), Some("32"));
+//! assert_eq!(host.get("target_vendor"), Some("pc"));
+//! assert_eq!(host.get("windows"), Some("windows"));
 //! # Ok(())
 //! # }
 //! # }
@@ -207,14 +217,16 @@
 //! # mod i686_unknown_linux_gnu {
 //! # use cargo_rustc_cfg::{Cfg, Error};
 //! # fn main() -> std::result::Result<(), Error> {
-//! let cfg = Cfg::host()?;
-//! assert_eq!(cfg.target().arch(), "x86");
-//! assert_eq!(cfg.target().endian(), "little");
-//! assert_eq!(cfg.target().env(), None);
-//! assert_eq!(cfg.target().family(), Some("unix"));
-//! assert_eq!(cfg.target().os(), "os");
-//! assert_eq!(cfg.target().pointer_width(), "32");
-//! assert_eq!(cfg.target().vendor(), Some("unknown"));
+//! let host = cargo_rustc_cfg::host()?;
+//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
+//! assert_eq!(host.get("target_arch"), Some("x86"));
+//! assert_eq!(host.get("target_endian"), Some("little"));
+//! assert_eq!(host.get("target_env"), Some("gnu"));
+//! assert_eq!(host.get("target_family"), Some("unix"));
+//! assert_eq!(host.get("target_os"), Some("linux"));
+//! assert_eq!(host.get("target_pointer_width"), Some("32"));
+//! assert_eq!(host.get("target_vendor"), Some("pc"));
+//! assert_eq!(host.get("unix"), Some("unix"));
 //! # Ok(())
 //! # }
 //! # }
@@ -228,14 +240,15 @@
 //! # mod i686_apple_darwin {
 //! # use cargo_rustc_cfg::{Cfg, Error};
 //! # fn main() -> std::result::Result<(), Error> {
-//! let cfg = Cfg::host()?;
-//! assert_eq!(cfg.target().arch(), "x86");
-//! assert_eq!(cfg.target().endian(), "little");
-//! assert_eq!(cfg.target().env(), None);
-//! assert_eq!(cfg.target().family(), Some("unix"));
-//! assert_eq!(cfg.target().os(), "os");
-//! assert_eq!(cfg.target().pointer_width(), "32");
-//! assert_eq!(cfg.target().vendor(), Some("apple"));
+//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
+//! assert_eq!(host.get("target_arch"), Some("x86"));
+//! assert_eq!(host.get("target_endian"), Some("little"));
+//! assert_eq!(host.get("target_env"), Some("apple"));
+//! assert_eq!(host.get("target_family"), Some("unix"));
+//! assert_eq!(host.get("target_os"), Some("macos"));
+//! assert_eq!(host.get("target_pointer_width"), Some("32"));
+//! assert_eq!(host.get("target_vendor"), Some("apple"));
+//! assert_eq!(host.get("unix"), Some("unix"));
 //! # Ok(())
 //! # }
 //! # }

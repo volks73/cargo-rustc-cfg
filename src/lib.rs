@@ -19,12 +19,31 @@
 //! scripts] as the compiler configuration information is available via [Cargo
 //! environment variables] that are passed to build scripts at run time.
 //!
+//! # Important
+//!
+//! This crate currently needs nightly toolchain to be installed. It
+//! does _not_ need the nightly toolchain to build, but it does need it to run
+//! because it uses a feature currently only available in the nightly version of
+//! Cargo. The nightly toolchain can be installed using [`rustup`]:
+//!
+//! ```bash
+//! $ rustup toolchain install nightly
+//! ```
+//!
+//! or
+//!
+//! ```pwsh
+//! PS C:\rustup toolchain install nightly
+//! ```
+//!
+//! # Background
+//!
 //! If the Rust compiler (rustc) target is `x86_64-pc-windows-msvc`, then the
 //! output from the `cargo rustc --print cfg` command will look similar to
 //! this:
 //!
 //! ```pwsh
-//! PS C:\Path\to\Rust\Project> cargo rustc --print cfg
+//! PS C:\Path\to\Rust\Project> cargo +nightly rustc --print cfg
 //! debug_assertions
 //! target_arch="x86_64"
 //! target_endian="little"
@@ -42,12 +61,9 @@
 //! The output may vary depending on the rustc target and development
 //! environment.
 //!
-//! This crate parses the above output and provides the [`Cfg`] and [`Target`]
-//! types for accessing the various values from the output. The values for any
-//! lines containing a key-value pair and prepended by the `target_` string are
-//! available in the [`Target`] type with the double quotes, `"`, removed. Any
-//! lines that are not recognized and/or not a target key-value pair are stored
-//! (unaltered) and can be obtained with the [`Cfg::extras`] method.
+//! This crate parses the above output and provides name or key-value pair
+//! compiler configurations as the [`Cfg`] enum for each target rustc
+//! configuration, [`TargetRustcCfg`].
 //!
 //! The [`CargoRustcPrintCfg`] type can be used to customize the `cargo rustc
 //! --print cfg` command.
@@ -61,16 +77,16 @@
 //! # extern crate cargo_rustc_cfg;
 //! # #[cfg(all(target_arch = "x86_64", target_os = "windows", target_env = "msvc", target_vendor = "pc"))]
 //! # mod x86_64_pc_windows_msvc {
-//! # use cargo_rustc_cfg::{Cfg, Error};
+//! # use cargo_rustc_cfg::{self, Error};
 //! # fn main() -> std::result::Result<(), Error> {
-//! let cfg = Cfg::host()?;
-//! assert_eq!(cfg.target().arch(), "x86_64");
-//! assert_eq!(cfg.target().endian(), "little");
-//! assert_eq!(cfg.target().env(), Some("msvc"));
-//! assert_eq!(cfg.target().family(), Some("windows"));
-//! assert_eq!(cfg.target().os(), "windows");
-//! assert_eq!(cfg.target().pointer_width(), "64");
-//! assert_eq!(cfg.target().vendor(), Some("pc"));
+//! let host = cargo_rustc_cfg::host()?;
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_arch")), Some("x86_64"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_endian")), Some("little"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_env")), Some("msvc"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_family")), Some("windows"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_os")), Some("windows"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_pointer_width")), Some("64"));
+//! assert_eq!(host.iter().find(|c| c.key() == Some("target_vendor")), Some("pc"));
 //! # Ok(())
 //! # }
 //! # }
@@ -266,24 +282,23 @@
 //! ```
 //!
 //! [`Cfg`]: struct.Cfg.html
-//! [`Target`]: struct.Target.html
-//! [`Cfg::extras`]: struct.Cfg.html#method.extras
+//! [`TargetRustcCfg`]: struct.TargetRustcCfg.html
 //! [`CargoRustcPrintCfg`]: struct.CargoRustcPrintCfg.html
 //! [`rustc_target`]: struct.CargoRustcPrintCfg.html#rustc_target
-//! [`Cfg::rustc_target`]: struct.Cfg.html#method.rustc_target
 //! [Cargo]: https://doc.rust-lang.org/cargo/index.html
 //! [third-party]: https://github.com/rust-lang/cargo/wiki/Third-party-cargo-subcommands
 //! [Cargo custom subcommands]: https://doc.rust-lang.org/1.30.0/cargo/reference/external-tools.html#custom-subcommands
 //! [build scripts]: https://doc.rust-lang.org/cargo/reference/build-scripts.html
 //! [Cargo environment variables]: https://doc.rust-lang.org/cargo/reference/environment-variables.html#environment-variables-cargo-sets-for-build-scripts
+//! [`rustup`]: https://doc.rust-lang.org/nightly/edition-guide/rust-2018/rustup-for-managing-rust-versions.html
 //! [rustup]: https://rust-lang.github.io/rustup/
 
-use std::{env, str::FromStr};
 use std::ffi::{OsStr, OsString};
 use std::fmt;
 use std::path::PathBuf;
 use std::process::{Command, Output};
 use std::slice::Iter;
+use std::{env, str::FromStr};
 
 /// The command line name of the Cargo application.
 pub const CARGO: &str = "cargo";
@@ -293,6 +308,40 @@ pub const CARGO_VARIABLE: &str = "CARGO";
 
 /// The command line name of the Rust compiler subcommand for Cargo.
 pub const RUSTC: &str = "rustc";
+
+/// Gets the compiler (rustc) configurations for the host.
+pub fn host() -> Result<TargetRustcCfg, Error> {
+    CargoRustcPrintCfg::default()
+        .execute()?
+        .pop()
+        .ok_or_else(|| Error::from("The host compiler configuration does not exist"))
+}
+
+/// Gets the compiler (rustc) configurations for a specific target.
+///
+/// A compiler target's "triple" from the `rustc --print target-list` should be
+/// used.
+pub fn target<T>(triple: T) -> Result<TargetRustcCfg, Error>
+where
+    T: AsRef<OsStr>,
+{
+    CargoRustcPrintCfg::default()
+        .rustc_target(triple)
+        .execute()?
+        .pop()
+        .ok_or_else(|| Error::from("The target compiler configuration does not exist"))
+}
+
+/// Gets the compiler (rustc) configurations for multiple targets.
+///
+/// A compiler target's "triple" from the `rustc --print target-list` should be
+/// used.
+pub fn targets<T>(t: &[T]) -> Result<Vec<TargetRustcCfg>, Error>
+where
+    T: AsRef<OsStr>,
+{
+    CargoRustcPrintCfg::default().rustc_targets(t).execute()
+}
 
 /// A builder type for the `cargo rustc --print cfg` command.
 ///
@@ -405,7 +454,7 @@ impl CargoRustcPrintCfg {
     /// (Cargo.toml).
     pub fn manifest_path<P>(&mut self, p: P) -> &mut Self
     where
-        P: Into<PathBuf>
+        P: Into<PathBuf>,
     {
         self.manifest_path = Some(p.into());
         self
@@ -455,8 +504,6 @@ impl CargoRustcPrintCfg {
     ///
     /// If more than one rustc target is specified, the `-Z multitarget` option
     /// will automatically be added to the command invocation.
-    ///
-    /// [`rustup`]: https://rust-lang.github.io/rustup/
     pub fn rustc_target<T>(&mut self, t: T) -> &mut Self
     where
         T: AsRef<OsStr>,
@@ -493,7 +540,12 @@ impl CargoRustcPrintCfg {
     where
         T: AsRef<OsStr>,
     {
-        self.rustc_targets.append(&mut t.iter().map(|t| t.as_ref().into()).collect::<Vec<OsString>>());
+        self.rustc_targets.append(
+            &mut t
+                .iter()
+                .map(|t| t.as_ref().into())
+                .collect::<Vec<OsString>>(),
+        );
         self
     }
 
@@ -523,13 +575,13 @@ impl CargoRustcPrintCfg {
     /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
     /// # fn main() -> std::result::Result<(), Error> {
     /// let host = CargoRustcPrintCfg::default().execute()?[0];
-    /// assert_eq!(host, "x86_64");
-    /// assert_eq!(cfg.target().endian(), "little");
-    /// assert_eq!(cfg.target().env(), Some("msvc"));
-    /// assert_eq!(cfg.target().family(), Some("windows"));
-    /// assert_eq!(cfg.target().os(), "windows");
-    /// assert_eq!(cfg.target().pointer_width(), "64");
-    /// assert_eq!(cfg.target().vendor(), Some("pc"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_arch")), Some("x86_64"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_endian")), Some("little"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_env")), Some("msvc"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_family")), Some("windows"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_os")), Some("windows"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_pointer_width")), Some("64"));
+    /// assert_eq!(host.iter().find(|c| c.key() == Some("target_vendor")), Some("pc"));
     /// # Ok(())
     /// # }
     /// # }
@@ -621,7 +673,10 @@ impl CargoRustcPrintCfg {
         if !output.status.success() {
             return Err(Error::Command(output));
         }
-        String::from_utf8(output.stdout)?.split("").map(TargetRustcCfg::from_str).collect()
+        String::from_utf8(output.stdout)?
+            .split("")
+            .map(TargetRustcCfg::from_str)
+            .collect()
     }
 }
 
@@ -637,10 +692,14 @@ impl Default for CargoRustcPrintCfg {
     }
 }
 
+/// A container for the compiler (rustc) configurations for a specific compiler
+/// target.
 #[derive(Clone, Debug, PartialEq)]
 pub struct TargetRustcCfg(Vec<Cfg>);
 
 impl TargetRustcCfg {
+    /// An iterator visiting all compiler configurations for the compiler
+    /// (rustc) target.
     pub fn iter(&self) -> Iter<Cfg> {
         self.0.iter()
     }
@@ -650,7 +709,11 @@ impl FromStr for TargetRustcCfg {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.lines().map(|line| line.parse::<Cfg>()).collect::<Result<Vec<Cfg>, Error>>()?))
+        Ok(Self(
+            s.lines()
+                .map(|line| line.parse::<Cfg>())
+                .collect::<Result<Vec<Cfg>, Error>>()?,
+        ))
     }
 }
 
@@ -685,7 +748,7 @@ impl Cfg {
     pub fn name(&self) -> Option<&str> {
         match self {
             Cfg::Name(n) => Some(n),
-            Cfg::KeyPair(..) => None
+            Cfg::KeyPair(..) => None,
         }
     }
 
@@ -696,7 +759,7 @@ impl Cfg {
     pub fn key_pair(&self) -> Option<(&str, &str)> {
         match self {
             Cfg::Name(..) => None,
-            Cfg::KeyPair(k, v) => Some((k, v))
+            Cfg::KeyPair(k, v) => Some((k, v)),
         }
     }
 
@@ -727,9 +790,9 @@ impl Cfg {
     /// Returns `true` if this is a name configuration; otherwise, this returns
     /// `false`.
     pub fn is_name(&self) -> bool {
-         match self {
+        match self {
             Cfg::Name(..) => true,
-            Cfg::KeyPair(..) => false
+            Cfg::KeyPair(..) => false,
         }
     }
 
@@ -738,9 +801,9 @@ impl Cfg {
     /// Returns `true` if this is a key-value pair configuration; otherwise,
     /// this returns `false`.
     pub fn is_key_pair(&self) -> bool {
-         match self {
+        match self {
             Cfg::Name(..) => false,
-            Cfg::KeyPair(..) => true
+            Cfg::KeyPair(..) => true,
         }
     }
 
@@ -751,7 +814,7 @@ impl Cfg {
     pub fn into_name(self) -> Option<String> {
         match self {
             Cfg::Name(n) => Some(n),
-            Cfg::KeyPair(..) => None
+            Cfg::KeyPair(..) => None,
         }
     }
 
@@ -762,7 +825,7 @@ impl Cfg {
     pub fn into_key_pair(self) -> Option<(String, String)> {
         match self {
             Cfg::Name(..) => None,
-            Cfg::KeyPair(k, v) => Some((k, v))
+            Cfg::KeyPair(k, v) => Some((k, v)),
         }
     }
 }
@@ -774,9 +837,15 @@ impl FromStr for Cfg {
         if s.contains("=") {
             let mut parts = s.split("=");
             if let (Some(key), Some(value)) = (parts.next(), parts.next()) {
-                Ok(Cfg::KeyPair(String::from(key), value.trim_matches('"').to_string()))
+                Ok(Cfg::KeyPair(
+                    String::from(key),
+                    value.trim_matches('"').to_string(),
+                ))
             } else {
-                Err(Error::Generic(format!("Could not parse '{}' into a key-value configuration pair", s)))
+                Err(Error::Generic(format!(
+                    "Could not parse '{}' into a key-value configuration pair",
+                    s
+                )))
             }
         } else {
             Ok(Cfg::Name(String::from(s)))

@@ -763,6 +763,19 @@ impl TargetRustcCfg {
             }
         })
     }
+
+    /// Returns `true` if a compiler configuration matches the corresponding identifier (ID).
+    ///
+    /// In the case of a name compiler configuration, the name is the ID. If the
+    /// compiler configuration is a key-value pair, the key is the ID.
+    pub fn has(&self, id: &str) -> bool {
+         self.0.iter().find(|c| {
+            match c {
+                Cfg::Name(n) => n == id,
+                Cfg::KeyPair(k, ..) => k == id,
+            }
+        }).is_some()
+    }
 }
 
 impl FromStr for TargetRustcCfg {

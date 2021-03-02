@@ -21,10 +21,8 @@
 //!
 //! # Important
 //!
-//! This crate currently needs nightly toolchain to be installed. It
-//! does _not_ need the nightly toolchain to build, but it does need it to run
-//! because it uses a feature currently only available in the nightly version of
-//! Cargo. The nightly toolchain can be installed using [`rustup`]:
+//! This crate currently only works with the nightly toolchain. The nightly
+//! toolchain can be installed using [`rustup`]:
 //!
 //! ```bash
 //! $ rustup toolchain install nightly
@@ -35,6 +33,10 @@
 //! ```pwsh
 //! PS C:\rustup toolchain install nightly
 //! ```
+//!
+//! The default toolchain can be changed with `rustup` as well or the `+nightly`
+//! toolchain argument can be added to the command invocation using the
+//! [`cargo_toolchain`] method of the [`CargoRustcPrintCfg`] builder.
 //!
 //! # Background
 //!
@@ -58,259 +60,24 @@
 //! windows
 //! ```
 //!
-//! The output may vary depending on the rustc target and development
+//! The output may vary depending on the rustc host and development
 //! environment.
 //!
 //! This crate parses the above output and provides name or key-value pair
 //! compiler configurations as the [`Cfg`] enum for each target rustc
-//! configuration, [`TargetRustcCfg`].
+//! configuration, [`RustcTargetCfg`].
 //!
 //! The [`CargoRustcPrintCfg`] type can be used to customize the `cargo rustc
-//! --print cfg` command.
-//!
-//! # Examples
-//!
-//! Get the host configuration with Cargo modifications if the host is
-//! `x86_64-pc-windows-msvc`:
-//!
-//! ```
-//! # extern crate cargo_rustc_cfg;
-//! # use cargo_rustc_cfg::Error;
-//! # fn main() -> std::result::Result<(), Error> {
-//! let host = cargo_rustc_cfg::host()?;
-//! dbg!(&host);
-//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
-//! assert_eq!(host.get("target_arch"), Some("x86_64"));
-//! assert_eq!(host.get("target_endian"), Some("little"));
-//! assert_eq!(host.get("target_env"), Some("msvc"));
-//! assert_eq!(host.get("target_family"), Some("windows"));
-//! assert_eq!(host.get("target_os"), Some("windows"));
-//! assert_eq!(host.get("target_pointer_width"), Some("64"));
-//! assert_eq!(host.get("target_vendor"), Some("pc"));
-//! assert_eq!(host.get("windows"), Some("windows"));
-//! # Ok(())
-//! # }
-//! ```
-//!
-//! If the host is `x86_64-pc-windows-gnu`, then:
-//!
-//! ```
-//! # extern crate cargo_rustc_cfg;
-//! # #[cfg(all(target_arch = "x86_64", target_os = "windows", target_env = "gnu", target_vendor = "pc"))]
-//! # mod x86_64_pc_windows_gnu {
-//! # use cargo_rustc_cfg::{Cfg, Error};
-//! # fn main() -> std::result::Result<(), Error> {
-//! let host = cargo_rustc_cfg::host()?;
-//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
-//! assert_eq!(host.get("target_arch"), Some("x86_64"));
-//! assert_eq!(host.get("target_endian"), Some("little"));
-//! assert_eq!(host.get("target_env"), Some("gnu"));
-//! assert_eq!(host.get("target_family"), Some("windows"));
-//! assert_eq!(host.get("target_os"), Some("windows"));
-//! assert_eq!(host.get("target_pointer_width"), Some("64"));
-//! assert_eq!(host.get("target_vendor"), Some("pc"));
-//! assert_eq!(host.get("windows"), Some("windows"));
-//! # Ok(())
-//! # }
-//! # }
-//! ```
-//!
-//! If the host is `x86_64-unknown-linux-gnu`, then:
-//!
-//! ```
-//! # extern crate cargo_rustc_cfg;
-//! # #[cfg(all(target_arch = "x86_64", target_os = "linux"))]
-//! # mod x86_64_unknown_linux_gnu {
-//! # use cargo_rustc_cfg::{Cfg, Error};
-//! # fn main() -> std::result::Result<(), Error> {
-//! let host = cargo_rustc_cfg::host()?;
-//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
-//! assert_eq!(host.get("target_arch"), Some("x86_64"));
-//! assert_eq!(host.get("target_endian"), Some("little"));
-//! assert_eq!(host.get("target_env"), Some("gnu"));
-//! assert_eq!(host.get("target_family"), Some("unix"));
-//! assert_eq!(host.get("target_os"), Some("linux"));
-//! assert_eq!(host.get("target_pointer_width"), Some("64"));
-//! assert_eq!(host.get("target_vendor"), Some("unknown"));
-//! assert_eq!(host.get("unix"), Some("unix"));
-//! # Ok(())
-//! # }
-//! # }
-//! ```
-//!
-//! If the host is `x86_64-apple-darwin`, then:
-//!
-//! ```
-//! # extern crate cargo_rustc_cfg;
-//! # #[cfg(all(target_arch = "x86_64", target_os = "macos"))]
-//! # mod x86_64_apple_darwin {
-//! # use cargo_rustc_cfg::{Cfg, Error};
-//! # fn main() -> std::result::Result<(), Error> {
-//! let host = cargo_rustc_cfg::host()?;
-//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
-//! assert_eq!(host.get("target_arch"), Some("x86_64"));
-//! assert_eq!(host.get("target_endian"), Some("little"));
-//! assert_eq!(host.get("target_env"), Some("apple"));
-//! assert_eq!(host.get("target_family"), Some("unix"));
-//! assert_eq!(host.get("target_os"), Some("macos"));
-//! assert_eq!(host.get("target_pointer_width"), Some("64"));
-//! assert_eq!(host.get("target_vendor"), Some("apple"));
-//! assert_eq!(host.get("unix"), Some("unix"));
-//! # Ok(())
-//! # }
-//! # }
-//! ```
-//!
-//! If the host is `i686-pc-windows-msvc`, then:
-//!
-//! ```
-//! # extern crate cargo_rustc_cfg;
-//! # #[cfg(all(target_arch = "x86", target_os = "windows", target_env = "msvc", target_vendor = "pc"))]
-//! # mod i686_pc_windows_msvc {
-//! # use cargo_rustc_cfg::{Cfg, Error};
-//! # fn main() -> std::result::Result<(), Error> {
-//! let host = cargo_rustc_cfg::host()?;
-//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
-//! assert_eq!(host.get("target_arch"), Some("x86"));
-//! assert_eq!(host.get("target_endian"), Some("little"));
-//! assert_eq!(host.get("target_env"), Some("msvc"));
-//! assert_eq!(host.get("target_family"), Some("windows"));
-//! assert_eq!(host.get("target_os"), Some("windows"));
-//! assert_eq!(host.get("target_pointer_width"), Some("64"));
-//! assert_eq!(host.get("target_vendor"), Some("pc"));
-//! assert_eq!(host.get("windows"), Some("windows"));
-//! # Ok(())
-//! # }
-//! # }
-//! ```
-//!
-//! If the host is `i686-pc-windows-gnu`, then:
-//!
-//! ```
-//! # extern crate cargo_rustc_cfg;
-//! # #[cfg(all(target_arch = "x86", target_os = "windows", target_env = "gnu", target_vendor = "pc"))]
-//! # mod i686_pc_windows_gnu {
-//! # use cargo_rustc_cfg::{Cfg, Error};
-//! # fn main() -> std::result::Result<(), Error> {
-//! let host = cargo_rustc_cfg::host()?;
-//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
-//! assert_eq!(host.get("target_arch"), Some("x86"));
-//! assert_eq!(host.get("target_endian"), Some("little"));
-//! assert_eq!(host.get("target_env"), Some("gnu"));
-//! assert_eq!(host.get("target_family"), Some("windows"));
-//! assert_eq!(host.get("target_os"), Some("windows"));
-//! assert_eq!(host.get("target_pointer_width"), Some("32"));
-//! assert_eq!(host.get("target_vendor"), Some("pc"));
-//! assert_eq!(host.get("windows"), Some("windows"));
-//! # Ok(())
-//! # }
-//! # }
-//! ```
-//!
-//! If the host is `i686-unknown-linux-gnu`, then:
-//!
-//! ```
-//! # extern crate cargo_rustc_cfg;
-//! # #[cfg(all(target_arch = "x86", target_os = "linux"))]
-//! # mod i686_unknown_linux_gnu {
-//! # use cargo_rustc_cfg::{Cfg, Error};
-//! # fn main() -> std::result::Result<(), Error> {
-//! let host = cargo_rustc_cfg::host()?;
-//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
-//! assert_eq!(host.get("target_arch"), Some("x86"));
-//! assert_eq!(host.get("target_endian"), Some("little"));
-//! assert_eq!(host.get("target_env"), Some("gnu"));
-//! assert_eq!(host.get("target_family"), Some("unix"));
-//! assert_eq!(host.get("target_os"), Some("linux"));
-//! assert_eq!(host.get("target_pointer_width"), Some("32"));
-//! assert_eq!(host.get("target_vendor"), Some("pc"));
-//! assert_eq!(host.get("unix"), Some("unix"));
-//! # Ok(())
-//! # }
-//! # }
-//! ```
-//!
-//! If the host is `i686-apple-darwin`, then:
-//!
-//! ```
-//! # extern crate cargo_rustc_cfg;
-//! # #[cfg(all(target_arch = "x86", target_os = "macos"))]
-//! # mod i686_apple_darwin {
-//! # use cargo_rustc_cfg::{Cfg, Error};
-//! # fn main() -> std::result::Result<(), Error> {
-//! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
-//! assert_eq!(host.get("target_arch"), Some("x86"));
-//! assert_eq!(host.get("target_endian"), Some("little"));
-//! assert_eq!(host.get("target_env"), Some("apple"));
-//! assert_eq!(host.get("target_family"), Some("unix"));
-//! assert_eq!(host.get("target_os"), Some("macos"));
-//! assert_eq!(host.get("target_pointer_width"), Some("32"));
-//! assert_eq!(host.get("target_vendor"), Some("apple"));
-//! assert_eq!(host.get("unix"), Some("unix"));
-//! # Ok(())
-//! # }
-//! # }
-//! ```
-//!
-//! Get the configuration for a rustc target that is not the host, i.e.
-//! cross-compilation, using the [`CargoRustcPrintCfg`] type and the
-//! [`rustc_target`] method:
-//!
-//! ```
-//! # extern crate cargo_rustc_cfg;
-//! # use cargo_rustc_cfg::Error;
-//! # fn main() -> std::result::Result<(), Error> {
-//! let target = cargo_rustc_cfg::target("i686-unknown-linux-gnu")?;
-//! assert_eq!(target.get("debug_assertions"), Some("debug_assertions"));
-//! assert_eq!(target.get("target_arch"), Some("x86"));
-//! assert_eq!(target.get("target_endian"), Some("little"));
-//! assert_eq!(target.get("target_env"), Some("gnu"));
-//! assert_eq!(target.get("target_family"), Some("unix"));
-//! assert_eq!(target.get("target_os"), Some("linux"));
-//! assert_eq!(target.get("target_pointer_width"), Some("32"));
-//! assert_eq!(target.get("target_vendor"), Some("unknown"));
-//! assert_eq!(target.get("unix"), Some("unix"));
-//! # Ok(())
-//! # }
-//! ```
-//!
-//! It is also possible to get the configuration for multiple compiler targets:
-//!
-//! ```
-//! # extern crate cargo_rustc_cfg;
-//! # use cargo_rustc_cfg::Error;
-//! # fn main() -> std::result::Result<(), Error> {
-//! let targets = cargo_rustc_cfg::targets(&["i686-pc-windows-msvc", "i686-pc-windows-gnu"])?;
-//! let gnu = targets.get(0).expect("i686-pc-windows-gnu target");
-//! let msvc = targets.get(1).expect("i686-pc-windows-msvc target");
-//!
-//! assert_eq!(msvc.get("debug_assertions"), Some("debug_assertions"));
-//! assert_eq!(msvc.get("target_arch"), Some("x86"));
-//! assert_eq!(msvc.get("target_endian"), Some("little"));
-//! assert_eq!(msvc.get("target_env"), Some("msvc"));
-//! assert_eq!(msvc.get("target_family"), Some("windows"));
-//! assert_eq!(msvc.get("target_os"), Some("windows"));
-//! assert_eq!(msvc.get("target_pointer_width"), Some("32"));
-//! assert_eq!(msvc.get("target_vendor"), Some("pc"));
-//! assert_eq!(msvc.get("windows"), Some("windows"));
-//!
-//! assert_eq!(gnu.get("debug_assertions"), Some("debug_assertions"));
-//! assert_eq!(gnu.get("target_arch"), Some("x86"));
-//! assert_eq!(gnu.get("target_endian"), Some("little"));
-//! assert_eq!(gnu.get("target_env"), Some("gnu"));
-//! assert_eq!(gnu.get("target_family"), Some("windows"));
-//! assert_eq!(gnu.get("target_os"), Some("windows"));
-//! assert_eq!(gnu.get("target_pointer_width"), Some("32"));
-//! assert_eq!(gnu.get("target_vendor"), Some("pc"));
-//! assert_eq!(gnu.get("windows"), Some("windows"));
-//! # Ok(())
-//! # }
-//! ```
+//! --print cfg` command, but the [`host`], [`target`], and [`targets`]
+//! functions should meet the majority of use cases and needs.
 //!
 //! [`Cfg`]: struct.Cfg.html
-//! [`TargetRustcCfg`]: struct.TargetRustcCfg.html
+//! [`RustcTargetCfg`]: struct.RustcTargetCfg.html
 //! [`CargoRustcPrintCfg`]: struct.CargoRustcPrintCfg.html
-//! [`rustc_target`]: struct.CargoRustcPrintCfg.html#rustc_target
+//! [`cargo_toolchain`]: struct.CargoRustcPrintCfg.html#cargo_toolchain
+//! [`host`]: fn.host.html
+//! [`target`]: fn.target.html
+//! [`targets`]: fn.targets.html
 //! [Cargo]: https://doc.rust-lang.org/cargo/index.html
 //! [third-party]: https://github.com/rust-lang/cargo/wiki/Third-party-cargo-subcommands
 //! [Cargo custom subcommands]: https://doc.rust-lang.org/1.30.0/cargo/reference/external-tools.html#custom-subcommands
@@ -336,7 +103,19 @@ pub const CARGO_VARIABLE: &str = "CARGO";
 pub const RUSTC: &str = "rustc";
 
 /// Gets the compiler (rustc) configurations for the host.
-pub fn host() -> Result<TargetRustcCfg, Error> {
+///
+/// # Examples
+///
+/// ```
+/// # extern crate cargo_rustc_cfg;
+/// # use cargo_rustc_cfg::Error;
+/// # fn main() -> std::result::Result<(), Error> {
+/// let host = cargo_rustc_cfg::host()?;
+/// assert!(host.iter().count() > 0);
+/// # Ok(())
+/// # }
+/// ```
+pub fn host() -> Result<RustcTargetCfg, Error> {
     CargoRustcPrintCfg::default()
         .execute()?
         .pop()
@@ -347,7 +126,27 @@ pub fn host() -> Result<TargetRustcCfg, Error> {
 ///
 /// A compiler target's "triple" from the `rustc --print target-list` should be
 /// used.
-pub fn target<T>(triple: T) -> Result<TargetRustcCfg, Error>
+///
+/// # Examples
+///
+/// ```
+/// # extern crate cargo_rustc_cfg;
+/// # use cargo_rustc_cfg::Error;
+/// # fn main() -> std::result::Result<(), Error> {
+/// let target = cargo_rustc_cfg::target("i686-unknown-linux-gnu")?;
+/// assert_eq!(target.get("debug_assertions"), Some("debug_assertions"));
+/// assert_eq!(target.get("target_arch"), Some("x86"));
+/// assert_eq!(target.get("target_endian"), Some("little"));
+/// assert_eq!(target.get("target_env"), Some("gnu"));
+/// assert_eq!(target.get("target_family"), Some("unix"));
+/// assert_eq!(target.get("target_os"), Some("linux"));
+/// assert_eq!(target.get("target_pointer_width"), Some("32"));
+/// assert_eq!(target.get("target_vendor"), Some("unknown"));
+/// assert_eq!(target.get("unix"), Some("unix"));
+/// # Ok(())
+/// # }
+/// ```
+pub fn target<T>(triple: T) -> Result<RustcTargetCfg, Error>
 where
     T: AsRef<OsStr>,
 {
@@ -362,7 +161,40 @@ where
 ///
 /// A compiler target's "triple" from the `rustc --print target-list` should be
 /// used.
-pub fn targets<T>(t: &[T]) -> Result<Vec<TargetRustcCfg>, Error>
+///
+/// # Examples
+///
+/// ```
+/// # extern crate cargo_rustc_cfg;
+/// # use cargo_rustc_cfg::Error;
+/// # fn main() -> std::result::Result<(), Error> {
+/// let targets = cargo_rustc_cfg::targets(&["i686-pc-windows-msvc", "i686-pc-windows-gnu"])?;
+/// let gnu = targets.get(0).expect("i686-pc-windows-gnu target");
+/// let msvc = targets.get(1).expect("i686-pc-windows-msvc target");
+///
+/// assert_eq!(msvc.get("debug_assertions"), Some("debug_assertions"));
+/// assert_eq!(msvc.get("target_arch"), Some("x86"));
+/// assert_eq!(msvc.get("target_endian"), Some("little"));
+/// assert_eq!(msvc.get("target_env"), Some("msvc"));
+/// assert_eq!(msvc.get("target_family"), Some("windows"));
+/// assert_eq!(msvc.get("target_os"), Some("windows"));
+/// assert_eq!(msvc.get("target_pointer_width"), Some("32"));
+/// assert_eq!(msvc.get("target_vendor"), Some("pc"));
+/// assert_eq!(msvc.get("windows"), Some("windows"));
+///
+/// assert_eq!(gnu.get("debug_assertions"), Some("debug_assertions"));
+/// assert_eq!(gnu.get("target_arch"), Some("x86"));
+/// assert_eq!(gnu.get("target_endian"), Some("little"));
+/// assert_eq!(gnu.get("target_env"), Some("gnu"));
+/// assert_eq!(gnu.get("target_family"), Some("windows"));
+/// assert_eq!(gnu.get("target_os"), Some("windows"));
+/// assert_eq!(gnu.get("target_pointer_width"), Some("32"));
+/// assert_eq!(gnu.get("target_vendor"), Some("pc"));
+/// assert_eq!(gnu.get("windows"), Some("windows"));
+/// # Ok(())
+/// # }
+/// ```
+pub fn targets<T>(t: &[T]) -> Result<Vec<RustcTargetCfg>, Error>
 where
     T: AsRef<OsStr>,
 {
@@ -530,6 +362,32 @@ impl CargoRustcPrintCfg {
     ///
     /// If more than one rustc target is specified, the `-Z multitarget` option
     /// will automatically be added to the command invocation.
+    ///
+    /// # Examples
+    ///
+    /// The compiler configuration for the i686-unknown-linux-gnu target regardless of the host.
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let target = CargoRustcPrintCfg::default()
+    ///     .rustc_target("i686-unknown-linux-gnu")
+    ///     .execute()?
+    ///     .pop()
+    ///     .expect("Compiler configuration");
+    /// assert_eq!(target.get("debug_assertions"), Some("debug_assertions"));
+    /// assert_eq!(target.get("target_arch"), Some("x86"));
+    /// assert_eq!(target.get("target_endian"), Some("little"));
+    /// assert_eq!(target.get("target_env"), Some("gnu"));
+    /// assert_eq!(target.get("target_family"), Some("unix"));
+    /// assert_eq!(target.get("target_os"), Some("linux"));
+    /// assert_eq!(target.get("target_pointer_width"), Some("32"));
+    /// assert_eq!(target.get("target_vendor"), Some("unknown"));
+    /// assert_eq!(target.get("unix"), Some("unix"));
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn rustc_target<T>(&mut self, t: T) -> &mut Self
     where
         T: AsRef<OsStr>,
@@ -560,34 +418,6 @@ impl CargoRustcPrintCfg {
     ///
     /// If multiple rustc targets are specified, then the `-Z multitarget`
     /// option will be added automatically to the command invocation.
-    ///
-    /// # Examples
-    ///
-    /// The compiler configuration for the i686-unknown-linux-gnu target regardless of the host.
-    ///
-    /// ```
-    /// # extern crate cargo_rustc_cfg;
-    /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
-    /// # fn main() -> std::result::Result<(), Error> {
-    /// let target = CargoRustcPrintCfg::default()
-    ///     .rustc_target("i686-unknown-linux-gnu")
-    ///     .execute()?
-    ///     .pop()
-    ///     .expect("Target compiler configuration");
-    /// assert_eq!(target.get("debug_assertions"), Some("debug_assertions"));
-    /// assert_eq!(target.get("target_arch"), Some("x86"));
-    /// assert_eq!(target.get("target_endian"), Some("little"));
-    /// assert_eq!(target.get("target_env"), Some("gnu"));
-    /// assert_eq!(target.get("target_family"), Some("unix"));
-    /// assert_eq!(target.get("target_os"), Some("linux"));
-    /// assert_eq!(target.get("target_pointer_width"), Some("32"));
-    /// assert_eq!(target.get("target_vendor"), Some("unknown"));
-    /// assert_eq!(target.get("unix"), Some("unix"));
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// [`rustup`]: https://rust-lang.github.io/rustup/
     pub fn rustc_targets<T>(&mut self, t: &[T]) -> &mut Self
     where
         T: AsRef<OsStr>,
@@ -695,7 +525,7 @@ impl CargoRustcPrintCfg {
     /// [`rustc_targets`]: #method.rustc_targets
     /// [`rustc_target`]: #method.rustc_target
     /// [`rustc_args`]: #method.rustc_args
-    pub fn execute(&self) -> Result<Vec<TargetRustcCfg>, Error> {
+    pub fn execute(&self) -> Result<Vec<RustcTargetCfg>, Error> {
         let mut cmd = Command::new(
             env::var(CARGO_VARIABLE)
                 .map(PathBuf::from)
@@ -738,16 +568,13 @@ impl CargoRustcPrintCfg {
         let mut targets = Vec::new();
         for line in stdout.lines() {
             if line.is_empty() {
-                targets.push(TargetRustcCfg(cfgs.drain(..).collect()));
+                targets.push(RustcTargetCfg(cfgs.drain(..).collect()));
             } else {
                 cfgs.push(line.parse::<Cfg>()?);
             }
         }
-        targets.push(TargetRustcCfg(cfgs));
+        targets.push(RustcTargetCfg(cfgs));
         Ok(targets)
-        // stdout.split("\n\n")
-        //     .map(TargetRustcCfg::from_str)
-        //     .collect()
     }
 }
 
@@ -766,9 +593,9 @@ impl Default for CargoRustcPrintCfg {
 /// A container for the compiler (rustc) configurations for a specific compiler
 /// target.
 #[derive(Clone, Debug, PartialEq)]
-pub struct TargetRustcCfg(Vec<Cfg>);
+pub struct RustcTargetCfg(Vec<Cfg>);
 
-impl TargetRustcCfg {
+impl RustcTargetCfg {
     /// An iterator visiting all compiler configurations for the compiler
     /// (rustc) target.
     pub fn iter(&self) -> Iter<Cfg> {
@@ -815,7 +642,7 @@ impl TargetRustcCfg {
     }
 }
 
-impl FromStr for TargetRustcCfg {
+impl FromStr for RustcTargetCfg {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -827,7 +654,7 @@ impl FromStr for TargetRustcCfg {
     }
 }
 
-impl IntoIterator for TargetRustcCfg {
+impl IntoIterator for RustcTargetCfg {
     type Item = Cfg;
     type IntoIter = std::vec::IntoIter<Self::Item>;
 

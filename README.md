@@ -16,9 +16,7 @@ A Rust library (crate) that runs the `cargo rustc --print cfg` command and parse
 
 ## Quick Start
 
-**Note**, the nighlty toolchain must be installed. It is not needed for building
-the crate/library, but it uses Cargo features that are currently only available
-in the nightly toolchain.
+**Note**, this crate currently needs the nightly toolchain. 
 
 ```rust
 use cargo_rustc_cfg;
@@ -45,7 +43,7 @@ extern crate cargo_rustc_cfg;
 
 ## Tests
 
-Tests are run using the `cargo test` command. Currently, only [documentation tests] are implemented because for a relatively simple, small library these provide enough coverage.
+Tests are run using the `cargo test` command. Currently, only [documentation tests] are implemented because for a relatively simple, small library these provide enough coverage. If the default toolchain is `stable` but the `nightly` toolchain is installed, the `cargo +nightly test` command can be used without having to switch the default toolchain.
 
 [Documentation tests]: https://doc.rust-lang.org/rustdoc/documentation-tests.html
 

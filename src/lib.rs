@@ -634,11 +634,10 @@ impl RustcTargetCfg {
     pub fn has(&self, id: &str) -> bool {
         self.0
             .iter()
-            .find(|c| match c {
+            .any(|c| match c {
                 Cfg::Name(n) => n == id,
                 Cfg::KeyPair(k, v) => k == id || v == id,
             })
-            .is_some()
     }
 }
 
@@ -771,8 +770,8 @@ impl FromStr for Cfg {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.contains("=") {
-            let mut parts = s.split("=");
+        if s.contains('=') {
+            let mut parts = s.split('=');
             if let (Some(key), Some(value)) = (parts.next(), parts.next()) {
                 Ok(Cfg::KeyPair(
                     String::from(key),

@@ -43,7 +43,7 @@
 //! this:
 //!
 //! ```pwsh
-//! PS C:\Path\to\Rust\Project> cargo +nightly rustc --print cfg
+//! PS C:\Path\to\Rust\Project> cargo rustc --print cfg
 //! debug_assertions
 //! target_arch="x86_64"
 //! target_endian="little"
@@ -374,7 +374,7 @@ where
 /// For reference, the default command signature is:
 ///
 /// ```text
-/// cargo +nightly rustc -Z unstable-option --print cfg
+/// cargo rustc -Z unstable-option --print cfg
 /// ```
 ///
 /// and the more generic command signature represented by this type is:
@@ -408,13 +408,13 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-options --print cfg
+    /// cargo rustc -Z unstable-options --print cfg
     /// ```
     ///
     /// and this method adds arguments between `rustc` and `--print cfg` to yield:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-options <CARGO_ARGS> --print cfg
+    /// cargo rustc -Z unstable-options <CARGO_ARGS> --print cfg
     /// ```
     pub fn cargo_args<A, S>(&mut self, a: A) -> &mut Self
     where
@@ -437,11 +437,11 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option --print cfg
+    /// cargo rustc -Z unstable-option --print cfg
     /// ```
     ///
-    /// and this method would replace `+nightly` with `+<TOOLCHAIN>` between
-    /// `cargo` and `rustc` to yield:
+    /// and this method would add `+<TOOLCHAIN>` between `cargo` and `rustc` to
+    /// yield:
     ///
     /// ```text
     /// cargo +<TOOLCHAIN> rustc -Z unstable-option --print cfg
@@ -467,13 +467,13 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option --print cfg
+    /// cargo rustc -Z unstable-option --print cfg
     /// ```
     ///
     /// and this method adds the `--manifest-path` argument to yield:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option --manifest-path <PATH> --print cfg
+    /// cargo rustc -Z unstable-option --manifest-path <PATH> --print cfg
     /// ```
     ///
     /// where `<PATH>` is replaced with a path to a package's manifest
@@ -491,13 +491,13 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option --print cfg
+    /// cargo rustc -Z unstable-option --print cfg
     /// ```
     ///
     /// and this method adds arguments after `--` to yield:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option --print cfg -- <RUSTC_ARGS>
+    /// cargo rustc -Z unstable-option --print cfg -- <RUSTC_ARGS>
     /// ```
     pub fn rustc_args<A, S>(&mut self, a: A) -> &mut Self
     where
@@ -516,13 +516,13 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option --print cfg
+    /// cargo rustc -Z unstable-option --print cfg
     /// ```
     ///
     /// and this method would add `--target <RUSTC_TARGET>` to yield:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option --target <RUSTC_TARGET> --print cfg
+    /// cargo rustc -Z unstable-option --target <RUSTC_TARGET> --print cfg
     /// ```
     ///
     /// where `<RUSTC_TARGET>` is a target triple from the `rustc --print
@@ -546,13 +546,13 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option --print cfg
+    /// cargo rustc -Z unstable-option --print cfg
     /// ```
     ///
     /// and this method would add multiple `--target <RUSTC_TARGET>` to yield:
     ///
     /// ```text
-    /// cargo +nightly rustc -Z unstable-option -Z multitarget --target <RUSTC_TARGET_1> --target <RUSTC_TARGET_2> --print cfg
+    /// cargo rustc -Z unstable-option -Z multitarget --target <RUSTC_TARGET_1> --target <RUSTC_TARGET_2> --print cfg
     /// ```
     ///
     /// where `<RUSTC_TARGET>` is a target triple from the `rustc --print
@@ -703,8 +703,6 @@ impl CargoRustcPrintCfg {
             let mut arg = OsString::from("+");
             arg.push(toolchain);
             cmd.arg(arg);
-        } else {
-            // cmd.arg("+nightly");
         }
         cmd.arg(RUSTC);
         cmd.arg("-Z");
@@ -779,14 +777,16 @@ impl TargetRustcCfg {
     /// the compiler configuration is a key-value pair, the value will be
     /// returned if the key matches the ID.
     pub fn get(&self, id: &str) -> Option<&str> {
-        self.0.iter().find_map(|c| {
-            match c {
-                Cfg::Name(n) => if n == id {
+        self.0.iter().find_map(|c| match c {
+            Cfg::Name(n) => {
+                if n == id {
                     Some(n.as_ref())
                 } else {
                     None
-                },
-                Cfg::KeyPair(k, v) => if k == id {
+                }
+            }
+            Cfg::KeyPair(k, v) => {
+                if k == id {
                     Some(v.as_ref())
                 } else {
                     None
@@ -801,12 +801,13 @@ impl TargetRustcCfg {
     /// compiler configuration is a key-value pair, then this will return `true`
     /// if either the key or the value match the ID.
     pub fn has(&self, id: &str) -> bool {
-         self.0.iter().find(|c| {
-            match c {
+        self.0
+            .iter()
+            .find(|c| match c {
                 Cfg::Name(n) => n == id,
                 Cfg::KeyPair(k, v) => k == id || v == id,
-            }
-        }).is_some()
+            })
+            .is_some()
     }
 }
 

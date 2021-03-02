@@ -235,18 +235,52 @@ pub struct CargoRustcPrintCfg {
 
 impl CargoRustcPrintCfg {
     /// Adds arguments to the Cargo command after the `rustc` subcommand but
-    /// before the `<CARGO_TARGET>` and `<RUSTC_TARGET>` arguments.
+    /// before `--print cfg` argument.
     ///
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo rustc -Z unstable-options --print cfg
+    /// cargo rustc --print cfg
     /// ```
     ///
     /// and this method adds arguments between `rustc` and `--print cfg` to yield:
     ///
     /// ```text
-    /// cargo rustc -Z unstable-options <CARGO_ARGS> --print cfg
+    /// cargo rustc <CARGO_ARGS> --print cfg
+    /// ```
+    ///
+    /// # Examples
+    ///
+    /// Adding the `-Z unstable-options` argument to the command. Note, the `-Z
+    /// unstable-options` is only available with the nightly channel:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let host = CargoRustcPrintCfg::default()
+    ///     .cargo_args(&["-Z", "unstable-options"])
+    ///     .execute()?
+    ///     .pop()
+    ///     .expect("Compiler confugiration");
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Adding the `-Z multitarget` argument to the command. Note, the `-Z
+    /// multitarget` is only available with the nightly channel:
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let host = CargoRustcPrintCfg::default()
+    ///     .cargo_args(&["-Z", "multitarget"])
+    ///     .execute()?
+    ///     .pop()
+    ///     .expect("Compiler confugiration");
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn cargo_args<A, S>(&mut self, a: A) -> &mut Self
     where
@@ -404,20 +438,28 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo rustc -Z unstable-option --print cfg
+    /// cargo rustc --print cfg
     /// ```
     ///
     /// and this method would add multiple `--target <RUSTC_TARGET>` to yield:
     ///
     /// ```text
-    /// cargo rustc -Z unstable-option -Z multitarget --target <RUSTC_TARGET_1> --target <RUSTC_TARGET_2> --print cfg
+    /// cargo rustc <RUSTC_TARGET_1> --target <RUSTC_TARGET_2> --print cfg
     /// ```
     ///
     /// where `<RUSTC_TARGET>` is a target triple from the `rustc --print
     /// target-list` output.
     ///
     /// If multiple rustc targets are specified, then the `-Z multitarget`
-    /// option will be added automatically to the command invocation.
+    /// option must be added using the [`cargo_args`] method or specified in the
+    /// project's `.cargo/config.toml` file as follows:
+    ///
+    /// ```toml
+    /// [unstable]
+    /// multitarget = true
+    /// ```
+    ///
+    /// [`cargo_args`]: #method.cargo_args
     pub fn rustc_targets<T>(&mut self, t: &[T]) -> &mut Self
     where
         T: AsRef<OsStr>,
@@ -538,10 +580,6 @@ impl CargoRustcPrintCfg {
             cmd.arg(arg);
         }
         cmd.arg(RUSTC);
-        if self.rustc_targets.len() > 1 {
-            cmd.arg("-Z");
-            cmd.arg("multitarget");
-        }
         if let Some(manifest_path) = &self.manifest_path {
             cmd.arg("--manifest-path");
             cmd.arg(manifest_path);

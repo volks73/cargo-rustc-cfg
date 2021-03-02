@@ -206,7 +206,7 @@ where
 /// For reference, the default command signature is:
 ///
 /// ```text
-/// cargo rustc -Z unstable-option --print cfg
+/// cargo rustc  --print cfg
 /// ```
 ///
 /// and the more generic command signature represented by this type is:
@@ -251,7 +251,7 @@ impl CargoRustcPrintCfg {
     ///
     /// # Examples
     ///
-    /// Adding the `-Z unstable-options` argument to the command. Note, the `-Z
+    /// Adding the `s` argument to the command. Note, the `-Z
     /// unstable-options` is only available with the nightly channel:
     ///
     /// ```
@@ -263,6 +263,12 @@ impl CargoRustcPrintCfg {
     ///     .execute()?
     ///     .pop()
     ///     .expect("Compiler confugiration");
+    /// assert!(host.has("target_arch"));
+    /// assert!(host.has("target_env"));
+    /// assert!(host.has("target_family"));
+    /// assert!(host.has("target_os"));
+    /// assert!(host.has("target_pointer_width"));
+    /// assert!(host.has("target_vendor"));
     /// # Ok(())
     /// # }
     /// ```
@@ -279,6 +285,12 @@ impl CargoRustcPrintCfg {
     ///     .execute()?
     ///     .pop()
     ///     .expect("Compiler confugiration");
+    /// assert!(host.has("target_arch"));
+    /// assert!(host.has("target_env"));
+    /// assert!(host.has("target_family"));
+    /// assert!(host.has("target_os"));
+    /// assert!(host.has("target_pointer_width"));
+    /// assert!(host.has("target_vendor"));
     /// # Ok(())
     /// # }
     /// ```
@@ -303,14 +315,14 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo rustc -Z unstable-option --print cfg
+    /// cargo rustc --print cfg
     /// ```
     ///
     /// and this method would add `+<TOOLCHAIN>` between `cargo` and `rustc` to
     /// yield:
     ///
     /// ```text
-    /// cargo +<TOOLCHAIN> rustc -Z unstable-option --print cfg
+    /// cargo +<TOOLCHAIN> rustc --print cfg
     /// ```
     ///
     /// [`rustup`]: https://rust-lang.github.io/rustup/
@@ -333,13 +345,13 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo rustc -Z unstable-option --print cfg
+    /// cargo rustc --print cfg
     /// ```
     ///
     /// and this method adds the `--manifest-path` argument to yield:
     ///
     /// ```text
-    /// cargo rustc -Z unstable-option --manifest-path <PATH> --print cfg
+    /// cargo rustc  --manifest-path <PATH> --print cfg
     /// ```
     ///
     /// where `<PATH>` is replaced with a path to a package's manifest
@@ -357,14 +369,18 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo rustc -Z unstable-option --print cfg
+    /// cargo rustc --print cfg
     /// ```
     ///
     /// and this method adds arguments after `--` to yield:
     ///
     /// ```text
-    /// cargo rustc -Z unstable-option --print cfg -- <RUSTC_ARGS>
+    /// cargo rustc --print cfg -- <RUSTC_ARGS>
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// An error may occur if the `--print cfg` argument is used as a rustc argument.
     pub fn rustc_args<A, S>(&mut self, a: A) -> &mut Self
     where
         A: IntoIterator<Item = S>,
@@ -382,13 +398,13 @@ impl CargoRustcPrintCfg {
     /// For reference, the default command is:
     ///
     /// ```text
-    /// cargo rustc -Z unstable-option --print cfg
+    /// cargo rustc --print cfg
     /// ```
     ///
     /// and this method would add `--target <RUSTC_TARGET>` to yield:
     ///
     /// ```text
-    /// cargo rustc -Z unstable-option --target <RUSTC_TARGET> --print cfg
+    /// cargo rustc --target <RUSTC_TARGET> --print cfg
     /// ```
     ///
     /// where `<RUSTC_TARGET>` is a target triple from the `rustc --print
@@ -410,7 +426,6 @@ impl CargoRustcPrintCfg {
     ///     .execute()?
     ///     .pop()
     ///     .expect("Compiler configuration");
-    /// assert_eq!(target.get("debug_assertions"), Some("debug_assertions"));
     /// assert_eq!(target.get("target_arch"), Some("x86"));
     /// assert_eq!(target.get("target_endian"), Some("little"));
     /// assert_eq!(target.get("target_env"), Some("gnu"));
@@ -422,6 +437,45 @@ impl CargoRustcPrintCfg {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// This method can also be used to specify multiple targets. Note, the
+    /// `multitarget` feature must be enabled. The following example uses
+    /// [`cargo_args`] to enable the multitarget feature (nightly-only).
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let targets = CargoRustcPrintCfg::default()
+    ///     .cargo_args(&["-Z", "multitarget"])
+    ///     .rustc_target("i686-pc-windows-msvc")
+    ///     .rustc_target("i686-pc-windows-gnu")
+    ///     .execute()?;
+    /// let gnu = targets.get(0).expect("i686-pc-windows-gnu target");
+    /// let msvc = targets.get(1).expect("i686-pc-windows-msvc target");
+    ///
+    /// assert_eq!(msvc.get("target_arch"), Some("x86"));
+    /// assert_eq!(msvc.get("target_endian"), Some("little"));
+    /// assert_eq!(msvc.get("target_env"), Some("msvc"));
+    /// assert_eq!(msvc.get("target_family"), Some("windows"));
+    /// assert_eq!(msvc.get("target_os"), Some("windows"));
+    /// assert_eq!(msvc.get("target_pointer_width"), Some("32"));
+    /// assert_eq!(msvc.get("target_vendor"), Some("pc"));
+    /// assert_eq!(msvc.get("windows"), Some("windows"));
+    ///
+    /// assert_eq!(gnu.get("target_arch"), Some("x86"));
+    /// assert_eq!(gnu.get("target_endian"), Some("little"));
+    /// assert_eq!(gnu.get("target_env"), Some("gnu"));
+    /// assert_eq!(gnu.get("target_family"), Some("windows"));
+    /// assert_eq!(gnu.get("target_os"), Some("windows"));
+    /// assert_eq!(gnu.get("target_pointer_width"), Some("32"));
+    /// assert_eq!(gnu.get("target_vendor"), Some("pc"));
+    /// assert_eq!(gnu.get("windows"), Some("windows"));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`cargo_args`]: #method.cargo_args
     pub fn rustc_target<T>(&mut self, t: T) -> &mut Self
     where
         T: AsRef<OsStr>,
@@ -444,7 +498,7 @@ impl CargoRustcPrintCfg {
     /// and this method would add multiple `--target <RUSTC_TARGET>` to yield:
     ///
     /// ```text
-    /// cargo rustc <RUSTC_TARGET_1> --target <RUSTC_TARGET_2> --print cfg
+    /// cargo rustc --target <RUSTC_TARGET_1> --target <RUSTC_TARGET_2> --print cfg
     /// ```
     ///
     /// where `<RUSTC_TARGET>` is a target triple from the `rustc --print
@@ -457,6 +511,43 @@ impl CargoRustcPrintCfg {
     /// ```toml
     /// [unstable]
     /// multitarget = true
+    /// ```
+    ///
+    /// # Examples
+    ///
+    /// Specifying multiple targets and enabling the `-Z multitarget` feature
+    /// with the [`cargo_args`] method (nightly-only):
+    ///
+    /// ```
+    /// # extern crate cargo_rustc_cfg;
+    /// # use cargo_rustc_cfg::{CargoRustcPrintCfg, Error};
+    /// # fn main() -> std::result::Result<(), Error> {
+    /// let targets = CargoRustcPrintCfg::default()
+    ///     .cargo_args(&["-Z", "multitarget"])
+    ///     .rustc_targets(&["i686-pc-windows-msvc", "i686-pc-windows-gnu"])
+    ///     .execute()?;
+    /// let gnu = targets.get(0).expect("i686-pc-windows-gnu target");
+    /// let msvc = targets.get(1).expect("i686-pc-windows-msvc target");
+    ///
+    /// assert_eq!(msvc.get("target_arch"), Some("x86"));
+    /// assert_eq!(msvc.get("target_endian"), Some("little"));
+    /// assert_eq!(msvc.get("target_env"), Some("msvc"));
+    /// assert_eq!(msvc.get("target_family"), Some("windows"));
+    /// assert_eq!(msvc.get("target_os"), Some("windows"));
+    /// assert_eq!(msvc.get("target_pointer_width"), Some("32"));
+    /// assert_eq!(msvc.get("target_vendor"), Some("pc"));
+    /// assert_eq!(msvc.get("windows"), Some("windows"));
+    ///
+    /// assert_eq!(gnu.get("target_arch"), Some("x86"));
+    /// assert_eq!(gnu.get("target_endian"), Some("little"));
+    /// assert_eq!(gnu.get("target_env"), Some("gnu"));
+    /// assert_eq!(gnu.get("target_family"), Some("windows"));
+    /// assert_eq!(gnu.get("target_os"), Some("windows"));
+    /// assert_eq!(gnu.get("target_pointer_width"), Some("32"));
+    /// assert_eq!(gnu.get("target_vendor"), Some("pc"));
+    /// assert_eq!(gnu.get("windows"), Some("windows"));
+    /// # Ok(())
+    /// # }
     /// ```
     ///
     /// [`cargo_args`]: #method.cargo_args
@@ -478,7 +569,7 @@ impl CargoRustcPrintCfg {
     /// For reference, the generic command signature:
     ///
     /// ```text
-    /// `cargo +<TOOLCHAIN> rustc -Z unstable-options <CARGO_ARGS> <RUSTC_TARGETS> --print cfg -- <RUSTC_ARGS>`
+    /// `cargo +<TOOLCHAIN> rustc <CARGO_ARGS> <RUSTC_TARGETS> --print cfg -- <RUSTC_ARGS>`
     /// ```
     ///
     /// where `<TOOLCHAIN>` is replaced with the [`cargo_toolchain`] value, the
@@ -501,7 +592,6 @@ impl CargoRustcPrintCfg {
     ///     .execute()?
     ///     .pop()
     ///     .expect("Compiler configuration");
-    /// assert_eq!(windows.get("debug_assertions"), Some("debug_assertions"));
     /// assert_eq!(windows.get("target_arch"), Some("x86_64"));
     /// assert_eq!(windows.get("target_endian"), Some("little"));
     /// assert_eq!(windows.get("target_env"), Some("msvc"));
@@ -525,7 +615,6 @@ impl CargoRustcPrintCfg {
     ///     .execute()?
     ///     .pop()
     ///     .expect("Compiler configuration");
-    /// assert_eq!(linux.get("debug_assertions"), Some("debug_assertions"));
     /// assert_eq!(linux.get("target_arch"), Some("x86_64"));
     /// assert_eq!(linux.get("target_endian"), Some("little"));
     /// assert_eq!(linux.get("target_env"), Some("gnu"));
@@ -549,7 +638,6 @@ impl CargoRustcPrintCfg {
     ///     .execute()?
     ///     .pop()
     ///     .expect("Compiler configuration");
-    /// assert_eq!(macos.get("debug_assertions"), Some("debug_assertions"));
     /// assert_eq!(macos.get("target_arch"), Some("x86_64"));
     /// assert_eq!(macos.get("target_endian"), Some("little"));
     /// assert_eq!(macos.get("target_env"), Some(""));

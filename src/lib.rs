@@ -632,12 +632,10 @@ impl RustcTargetCfg {
     /// compiler configuration is a key-value pair, then this will return `true`
     /// if either the key or the value match the ID.
     pub fn has(&self, id: &str) -> bool {
-        self.0
-            .iter()
-            .any(|c| match c {
-                Cfg::Name(n) => n == id,
-                Cfg::KeyPair(k, v) => k == id || v == id,
-            })
+        self.0.iter().any(|c| match c {
+            Cfg::Name(n) => n == id,
+            Cfg::KeyPair(k, v) => k == id || v == id,
+        })
     }
 }
 

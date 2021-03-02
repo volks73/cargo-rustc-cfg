@@ -660,6 +660,15 @@ impl IntoIterator for RustcTargetCfg {
     }
 }
 
+impl fmt::Display for RustcTargetCfg {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for cfg in &self.0 {
+            cfg.fmt(f)?;
+        }
+        Ok(())
+    }
+}
+
 /// A compiler (rustc) configuration statement, or line, from the output of the
 /// `cargo rustc --print cfg`.
 ///
@@ -670,7 +679,8 @@ pub enum Cfg {
     /// A compiler configuration like `unix`, `windows`, `debug_assertions`, etc.
     Name(String),
     /// A compiler configuration with a key and value separated by the equal
-    /// sign , `=`, like `target_arch=x86_64`, etc.
+    /// sign , `=`, like `target_arch="x86_64"`, etc. The surrounding double
+    /// quotes are removed.
     KeyPair(String, String),
 }
 

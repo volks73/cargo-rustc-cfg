@@ -75,11 +75,10 @@
 //!
 //! ```
 //! # extern crate cargo_rustc_cfg;
-//! # #[cfg(all(target_arch = "x86_64", target_os = "windows", target_env = "msvc", target_vendor = "pc"))]
-//! # mod x86_64_pc_windows_msvc {
-//! # use cargo_rustc_cfg::{self, Error};
+//! # use cargo_rustc_cfg::Error;
 //! # fn main() -> std::result::Result<(), Error> {
 //! let host = cargo_rustc_cfg::host()?;
+//! dbg!(&host);
 //! assert_eq!(host.get("debug_assertions"), Some("debug_assertions"));
 //! assert_eq!(host.get("target_arch"), Some("x86_64"));
 //! assert_eq!(host.get("target_endian"), Some("little"));
@@ -90,7 +89,6 @@
 //! assert_eq!(host.get("target_vendor"), Some("pc"));
 //! assert_eq!(host.get("windows"), Some("windows"));
 //! # Ok(())
-//! # }
 //! # }
 //! ```
 //!
@@ -258,31 +256,53 @@
 //! cross-compilation, using the [`CargoRustcPrintCfg`] type and the
 //! [`rustc_target`] method:
 //!
-//! ```ignore
+//! ```
 //! # extern crate cargo_rustc_cfg;
 //! # use cargo_rustc_cfg::Error;
 //! # fn main() -> std::result::Result<(), Error> {
-//! let target = cargo_rustc_cfg::target("i686-pc-windows-msvc")?;
+//! let target = cargo_rustc_cfg::target("i686-unknown-linux-gnu")?;
 //! assert_eq!(target.get("debug_assertions"), Some("debug_assertions"));
 //! assert_eq!(target.get("target_arch"), Some("x86"));
 //! assert_eq!(target.get("target_endian"), Some("little"));
-//! assert_eq!(target.get("target_env"), Some("msvc"));
-//! assert_eq!(target.get("target_family"), Some("windows"));
-//! assert_eq!(target.get("target_os"), Some("windows"));
-//! assert_eq!(target.get("target_pointer_width"), Some("64"));
-//! assert_eq!(target.get("target_vendor"), Some("pc"));
-//! assert_eq!(target.get("windows"), Some("windows"));
+//! assert_eq!(target.get("target_env"), Some("gnu"));
+//! assert_eq!(target.get("target_family"), Some("unix"));
+//! assert_eq!(target.get("target_os"), Some("linux"));
+//! assert_eq!(target.get("target_pointer_width"), Some("32"));
+//! assert_eq!(target.get("target_vendor"), Some("unknown"));
+//! assert_eq!(target.get("unix"), Some("unix"));
 //! # Ok(())
 //! # }
 //! ```
 //!
 //! It is also possible to get the configuration for multiple compiler targets:
 //!
-//! ```ignore
+//! ```
 //! # extern crate cargo_rustc_cfg;
 //! # use cargo_rustc_cfg::Error;
 //! # fn main() -> std::result::Result<(), Error> {
-//! let _targets = cargo_rustc_cfg::targets(&["i686-pc-windows-msvc", "i686-pc-windows-gnu"])?;
+//! let targets = cargo_rustc_cfg::targets(&["i686-pc-windows-msvc", "i686-pc-windows-gnu"])?;
+//! let gnu = targets.get(0).expect("i686-pc-windows-gnu target");
+//! let msvc = targets.get(1).expect("i686-pc-windows-msvc target");
+//!
+//! assert_eq!(msvc.get("debug_assertions"), Some("debug_assertions"));
+//! assert_eq!(msvc.get("target_arch"), Some("x86"));
+//! assert_eq!(msvc.get("target_endian"), Some("little"));
+//! assert_eq!(msvc.get("target_env"), Some("msvc"));
+//! assert_eq!(msvc.get("target_family"), Some("windows"));
+//! assert_eq!(msvc.get("target_os"), Some("windows"));
+//! assert_eq!(msvc.get("target_pointer_width"), Some("32"));
+//! assert_eq!(msvc.get("target_vendor"), Some("pc"));
+//! assert_eq!(msvc.get("windows"), Some("windows"));
+//!
+//! assert_eq!(gnu.get("debug_assertions"), Some("debug_assertions"));
+//! assert_eq!(gnu.get("target_arch"), Some("x86"));
+//! assert_eq!(gnu.get("target_endian"), Some("little"));
+//! assert_eq!(gnu.get("target_env"), Some("gnu"));
+//! assert_eq!(gnu.get("target_family"), Some("windows"));
+//! assert_eq!(gnu.get("target_os"), Some("windows"));
+//! assert_eq!(gnu.get("target_pointer_width"), Some("32"));
+//! assert_eq!(gnu.get("target_vendor"), Some("pc"));
+//! assert_eq!(gnu.get("windows"), Some("windows"));
 //! # Ok(())
 //! # }
 //! ```
@@ -684,7 +704,7 @@ impl CargoRustcPrintCfg {
             arg.push(toolchain);
             cmd.arg(arg);
         } else {
-            cmd.arg("+nightly");
+            // cmd.arg("+nightly");
         }
         cmd.arg(RUSTC);
         cmd.arg("-Z");
@@ -711,10 +731,21 @@ impl CargoRustcPrintCfg {
         if !output.status.success() {
             return Err(Error::Command(output));
         }
-        String::from_utf8(output.stdout)?
-            .split("")
-            .map(TargetRustcCfg::from_str)
-            .collect()
+        let stdout = String::from_utf8(output.stdout)?;
+        let mut cfgs = Vec::new();
+        let mut targets = Vec::new();
+        for line in stdout.lines() {
+            if line.is_empty() {
+                targets.push(TargetRustcCfg(cfgs.drain(..).collect()));
+            } else {
+                cfgs.push(line.parse::<Cfg>()?);
+            }
+        }
+        targets.push(TargetRustcCfg(cfgs));
+        Ok(targets)
+        // stdout.split("\n\n")
+        //     .map(TargetRustcCfg::from_str)
+        //     .collect()
     }
 }
 

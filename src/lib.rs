@@ -36,7 +36,17 @@
 //!
 //! The default toolchain can be changed with `rustup` as well or the `+nightly`
 //! toolchain argument can be added to the command invocation using the
-//! [`cargo_toolchain`] method of the [`CargoRustcPrintCfg`] builder.
+//! [`cargo_toolchain`] method of the [`CargoRustcPrintCfg`] builder. Another
+//! option is to add a `rust-toolchain` file to the project's directory with the
+//! following content:
+//!
+//! ```toml
+//! [toolchain]
+//! channel = "nightly"
+//! ```
+//!
+//! or use the `RUSTUP_TOOLCHAIN` environment variable. See the [Rustup
+//! Overrides] documentation for more information.
 //!
 //! # Background
 //!
@@ -85,6 +95,7 @@
 //! [Cargo environment variables]: https://doc.rust-lang.org/cargo/reference/environment-variables.html#environment-variables-cargo-sets-for-build-scripts
 //! [`rustup`]: https://doc.rust-lang.org/nightly/edition-guide/rust-2018/rustup-for-managing-rust-versions.html
 //! [rustup]: https://rust-lang.github.io/rustup/
+//! [Rustup Overrides]: https://rust-lang.github.io/rustup/overrides.html
 
 use std::ffi::{OsStr, OsString};
 use std::fmt;
@@ -102,7 +113,7 @@ pub const CARGO_VARIABLE: &str = "CARGO";
 /// The command line name of the Rust compiler subcommand for Cargo.
 pub const RUSTC: &str = "rustc";
 
-/// Gets the compiler (rustc) configurations for the host.
+/// Returns the compiler (rustc) configurations for the host.
 ///
 /// # Examples
 ///
@@ -111,7 +122,12 @@ pub const RUSTC: &str = "rustc";
 /// # use cargo_rustc_cfg::Error;
 /// # fn main() -> std::result::Result<(), Error> {
 /// let host = cargo_rustc_cfg::host()?;
-/// assert!(host.iter().count() > 0);
+/// assert!(host.has("target_arch"));
+/// assert!(host.has("target_env"));
+/// assert!(host.has("target_family"));
+/// assert!(host.has("target_os"));
+/// assert!(host.has("target_pointer_width"));
+/// assert!(host.has("target_vendor"));
 /// # Ok(())
 /// # }
 /// ```
@@ -122,7 +138,7 @@ pub fn host() -> Result<RustcTargetCfg, Error> {
         .ok_or_else(|| Error::from("The host compiler configuration does not exist"))
 }
 
-/// Gets the compiler (rustc) configurations for a specific target.
+/// Returns the compiler (rustc) configurations for a specific target.
 ///
 /// A compiler target's "triple" from the `rustc --print target-list` should be
 /// used.
@@ -134,7 +150,6 @@ pub fn host() -> Result<RustcTargetCfg, Error> {
 /// # use cargo_rustc_cfg::Error;
 /// # fn main() -> std::result::Result<(), Error> {
 /// let target = cargo_rustc_cfg::target("i686-unknown-linux-gnu")?;
-/// assert_eq!(target.get("debug_assertions"), Some("debug_assertions"));
 /// assert_eq!(target.get("target_arch"), Some("x86"));
 /// assert_eq!(target.get("target_endian"), Some("little"));
 /// assert_eq!(target.get("target_env"), Some("gnu"));
@@ -157,10 +172,19 @@ where
         .ok_or_else(|| Error::from("The target compiler configuration does not exist"))
 }
 
-/// Gets the compiler (rustc) configurations for multiple targets.
+/// Returns the compiler (rustc) configurations for multiple targets (nightly-only).
 ///
 /// A compiler target's "triple" from the `rustc --print target-list` should be
 /// used.
+///
+/// **Note**, the `multitarget` feature must be enabled and currently requires
+/// the nightly toolchain, which can be done by adding the following section to
+/// the project's `./cargo/config.toml` file:
+///
+/// ```toml
+/// [unstable]
+/// multitarget = true
+/// ```
 ///
 /// # Examples
 ///
@@ -172,7 +196,6 @@ where
 /// let gnu = targets.get(0).expect("i686-pc-windows-gnu target");
 /// let msvc = targets.get(1).expect("i686-pc-windows-msvc target");
 ///
-/// assert_eq!(msvc.get("debug_assertions"), Some("debug_assertions"));
 /// assert_eq!(msvc.get("target_arch"), Some("x86"));
 /// assert_eq!(msvc.get("target_endian"), Some("little"));
 /// assert_eq!(msvc.get("target_env"), Some("msvc"));
@@ -182,7 +205,6 @@ where
 /// assert_eq!(msvc.get("target_vendor"), Some("pc"));
 /// assert_eq!(msvc.get("windows"), Some("windows"));
 ///
-/// assert_eq!(gnu.get("debug_assertions"), Some("debug_assertions"));
 /// assert_eq!(gnu.get("target_arch"), Some("x86"));
 /// assert_eq!(gnu.get("target_endian"), Some("little"));
 /// assert_eq!(gnu.get("target_env"), Some("gnu"));
@@ -206,7 +228,7 @@ where
 /// For reference, the default command signature is:
 ///
 /// ```text
-/// cargo rustc  --print cfg
+/// cargo rustc --print cfg
 /// ```
 ///
 /// and the more generic command signature represented by this type is:

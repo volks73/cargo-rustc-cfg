@@ -36,7 +36,7 @@ jobs:
           toolchain: nightly
           override: true
 
-      - name: Run cargo test --doc
+      - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test

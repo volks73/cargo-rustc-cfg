@@ -538,9 +538,6 @@ impl CargoRustcPrintCfg {
             cmd.arg(arg);
         }
         cmd.arg(RUSTC);
-        // TODO: Remove the `-Z unstable-options` once the `--print` argument is stable.
-        cmd.arg("-Z");
-        cmd.arg("unstable-options");
         if self.rustc_targets.len() > 1 {
             cmd.arg("-Z");
             cmd.arg("multitarget");

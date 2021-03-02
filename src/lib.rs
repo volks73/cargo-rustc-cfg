@@ -437,7 +437,7 @@ impl CargoRustcPrintCfg {
     ///
     /// # Examples
     ///
-    /// The compiler configuration for the i686-unknown-linux-gnu target regardless of the host.
+    /// The compiler configuration for the `i686-unknown-linux-gnu` target regardless of the host.
     ///
     /// ```
     /// # extern crate cargo_rustc_cfg;
@@ -741,13 +741,14 @@ impl Default for CargoRustcPrintCfg {
 pub struct RustcTargetCfg(Vec<Cfg>);
 
 impl RustcTargetCfg {
-    /// An iterator visiting all compiler configurations for the compiler
-    /// (rustc) target.
+    /// Returns an iterator visiting all compiler configurations for the
+    /// compiler (rustc) target.
     pub fn iter(&self) -> Iter<Cfg> {
         self.0.iter()
     }
 
-    /// Returns a reference to the compiler configuration value with the corresponding identifier (ID).
+    /// Returns a reference to the compiler configuration value with the
+    /// corresponding identifier (ID).
     ///
     /// In the case of a name compiler configuration, the name is the value. If
     /// the compiler configuration is a key-value pair, the value will be
@@ -830,7 +831,7 @@ pub enum Cfg {
 }
 
 impl Cfg {
-    /// Gets the name configuration.
+    /// Returns the name configuration.
     ///
     /// This will return `None` if the configuration is not a name
     /// configuration.
@@ -841,7 +842,7 @@ impl Cfg {
         }
     }
 
-    /// Gets the key-value pair configuration.
+    /// Returns the key-value pair configuration.
     ///
     /// This will return `None` if the configuration is not a key-value pair
     /// configuration.
@@ -852,7 +853,7 @@ impl Cfg {
         }
     }
 
-    /// Gets the key part of the key-value pair configuration.
+    /// Returns the key part of the key-value pair configuration.
     ///
     /// This will return `None` if the configuration is not a key-value pair
     /// configuration.
@@ -863,7 +864,7 @@ impl Cfg {
         }
     }
 
-    /// Gets the value part of the key-value pair configuration.
+    /// Returns the value part of the key-value pair configuration.
     ///
     /// This will return `None` if the configuration is not a key-value pair
     /// configuration.
@@ -896,7 +897,7 @@ impl Cfg {
         }
     }
 
-    /// Gets the name configuration.
+    /// Returns the name configuration.
     ///
     /// This will return `None` if this is not a name configuration. Regardless,
     /// it will consume this configuration.
@@ -907,7 +908,7 @@ impl Cfg {
         }
     }
 
-    /// Gets the key-value pair configuration.
+    /// Returns the key-value pair configuration.
     ///
     /// This will return `None` if this is not a key-value pair configuration.
     /// Regardless, it will consume this configuration.
@@ -951,7 +952,7 @@ impl fmt::Display for Cfg {
     }
 }
 
-/// The error type for cargo-rustc-cfg operations and associated traits.
+/// The error type for ``cargo-rustc-cfg` operations and associated traits.
 ///
 /// Errors mostly originate from the dependencies and executing the `cargo rustc
 /// -- --print cfg` command, i.e. Input/Output (IO) errors, but custom instances

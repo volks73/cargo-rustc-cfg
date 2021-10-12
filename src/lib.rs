@@ -246,7 +246,7 @@ where
 /// [`cargo_args`]: #method.cargo_args
 /// [`rustc_target`]: #method.rustc_target
 /// [`rustc_args`]: #method.rustc_args
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct CargoRustcPrintCfg {
     cargo_args: Vec<OsString>,
     cargo_toolchain: Option<OsString>,
@@ -720,18 +720,6 @@ impl CargoRustcPrintCfg {
         }
         targets.push(RustcTargetCfg(cfgs));
         Ok(targets)
-    }
-}
-
-impl Default for CargoRustcPrintCfg {
-    fn default() -> Self {
-        Self {
-            cargo_args: Vec::new(),
-            cargo_toolchain: None,
-            manifest_path: None,
-            rustc_args: Vec::new(),
-            rustc_targets: Vec::new(),
-        }
     }
 }
 
